@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 #import the-things-I-need
 
 class Example:
@@ -41,3 +43,5 @@ class Attribute_Data:
 
 
 id = 1
+
+print ("hello") #dummy output test string

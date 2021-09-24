@@ -23,6 +23,26 @@
   <ItemGroup>
     <Compile Include="DecisionTree_Main.py" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="bank\" />
+    <Folder Include="bank\__MACOSX\" />
+    <Folder Include="car\" />
+    <Folder Include="car\__MACOSX\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="bank\data-desc.txt" />
+    <Content Include="bank\test.csv" />
+    <Content Include="bank\train.csv" />
+    <Content Include="bank\__MACOSX\._data-desc.txt" />
+    <Content Include="bank\__MACOSX\._test.csv" />
+    <Content Include="bank\__MACOSX\._train.csv" />
+    <Content Include="car\data-desc.txt" />
+    <Content Include="car\test.csv" />
+    <Content Include="car\train.csv" />
+    <Content Include="car\__MACOSX\._data-desc.txt" />
+    <Content Include="car\__MACOSX\._test.csv" />
+    <Content Include="car\__MACOSX\._train.csv" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
        Visual Studio and specify your pre- and post-build commands in

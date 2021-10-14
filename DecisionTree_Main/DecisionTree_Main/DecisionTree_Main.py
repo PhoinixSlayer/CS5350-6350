@@ -44,17 +44,16 @@ class Node:
 ## Each of these are binary versions, where there are only two possibilities for the attribute
 # Can't quite remember, need to check
 def InfoGain(positive_examples, negative_examples, total_examples):
-    print("In Info")
-    return -1
+    pos = positive_examples/total_examples
+    neg = negative_examples/total_examples
+    return -(pos*m.log2(pos))-(neg*m.log2(neg))
 
 # Pretty sure this is correct, but need to double check
 def MajorityError(majority_examples, total_examples):
-    print("in Majority")
     return 1 - majority_examples/total_examples
     
 # Pretty sure this is correct, but need verification
 def GiniIndex(positive_examples, negative_examples, total_examples):
-    print("In gini")
     pos = positive_examples/total_examples
     neg = negative_examples/total_examples
     return 1 - (pos**2 + neg**2)
@@ -64,7 +63,6 @@ def GiniIndex(positive_examples, negative_examples, total_examples):
 #  that if there are multiple labels an example can have, the total entropy for an attribute value is the combination of each of the 
 #  different label quantities each divided by the total number of examples in this attribute value.
 def GiniIndexMult(label_quantities, total_examples):
-    print("In GiniMulti")
     total = 0.0
     for labels in label_quantities:
         frac = labels/total_examples
@@ -73,7 +71,6 @@ def GiniIndexMult(label_quantities, total_examples):
 #Don't know why, but for some reason something's wrong with GiniIndexMult?
 
 def InfoGainMult(label_quantities, total_examples):
-    print("In InfoMulti")
     total = 0
     for labels in label_quantities:
         frac = labels/total_examples

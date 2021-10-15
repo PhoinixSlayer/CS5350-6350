@@ -76,16 +76,22 @@ def GiniIndexMult(label_quantities, total_examples):
 
 def InfoGainMult(label_quantities, total_examples):
     total = 0
-    for labels in label_quantities:
-        frac = labels/total_examples
-        entr = -((frac)*m.log2(frac))
+    for label in label_quantities:
+        frac = label/total_examples
+        entr = -(frac)*m.log2(frac)
         total += entr
     return total
 
 
 # Method that constructs the tree recursively
 def SplitNode(sec_root, version):
-    #info_value = InfoGain()  # Here I need to calculate the total info gain using whatever method is desired.
+    # The base cases would go here before any of the math occurs, as much of it depends on several pieces of information being non-zero
+    # --- Base Cases ---
+
+    labels = []
+    for l in sec_root.Labels_in_Branch.label_values_and_counts:
+        labels.append[l]
+    overall_gain = InfoGain(labels, sec_root.Labels_in_Branch.total_num_values)  # Here I need to calculate the total info gain using whatever method is desired.
 
     Atts_data = {}  # Data for each of the attributes we can work with
     for a in sec_root.Remaining_Attributes: # for this attribute ...
@@ -106,11 +112,40 @@ def SplitNode(sec_root, version):
             value = example.attributes[a]
             data.num_each_value[value] += 1
             data.value_label_counts[value][example.label] += 1
+    # After this point, all of the data should be accurately totaled so we can calculate the desired info
 
     # After each of the attributes have been built and the data correctly parsed, we can then do our calculations to determine which one is
     #  best to split on at this stage of the tree
     # First we need to figure out what the gains for each of the attributes values are, then we can combine those to calculate the total gain
     #  for the attribute. after we've done that for everything, we can decide which is the best, and use that to split this node on the tree.
+    gains = {}
+    for a in sec_root.Remaining_Attributes:
+        gains.update({a: 0})
+
+    for a in sec_root.Remaining_Attributes:
+        value_total = 0
+        current_attr = Atts_data[a]
+        for v in current_attr.num_each_value:
+            for l in current_attr.value_label_counts[v].values():
+                label_total_list.append(l)
+            total_for_value = current_attr.num_each_value[v]
+            value_sum = InfoGainMult(label_total, total_for_value) # Calculate this attr value's entropy
+            value_total += value_sum * (total_for_value / sec_root.Labels_in_Branch.total_num_values) # mult it by the proportion of the data it holds
+        # Pretty sure that with each of the values of the attribute determined, its just the overall gain minus this total
+        gains[a] = overall_gain - value_total
+
+    # Here, its a simple check to determine which attribute has the highest score (and will be the one that we split on)
+    best_to_split = ""
+    current = -1
+    best = -1
+    for a in gains:
+        current = gains[a]
+        if current > best:
+            best = current
+            best_to_split = a
+
+    #TODO: with splitter decided, need to create node for each attribute subset, accurately distribute data, set up tree connections, 
+    #       fill in base cases so errors don't happen and tree properly completes, add different tree level functionality, (+ more)
 
 
 

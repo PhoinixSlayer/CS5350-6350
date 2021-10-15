@@ -1,4 +1,4 @@
-# File for main project, Hoping this works and fixes my problem
+# File for main DecisionTree project
 #import the-things-I-need
 import math as m
 import pandas as pd
@@ -18,9 +18,9 @@ class AttributeData:
     #attribute_value_counts  = {}
     #attribute_values_neg
     def __init__(self, attr_name):
-        self.attribute_name = attr_name          
+        self.attribute_name = attr_name
         self.num_each_value = { }
-        self.attribute_value_counts = { }   #make into a default dictionary, each key is attribute value, goes to array 0 <-> labels-1
+        self.value_label_counts = { }   #make into a default dictionary, each key is attribute value, goes to array 0 <-> labels-1
      #   self.attribute_values_neg = { }   #make into a default dictionary (correct?)
 
     
@@ -35,9 +35,13 @@ class Label_data:
 # Class for the decision tree representation of the data
 class Node:
     def __init__(self):
-        self.Attribute_of_piece = None
-        self.node_list = []
-        self.parent = None
+        self.Value_of_Parent_Attribute = None  # The value of the attribute this node was created with
+        self.Attribute = None  # Attribute this Node is splitting on
+        self.Examples_in_Branch = {}  # The examples that we can use in this section of the tree
+        self.Labels_in_Branch = None  # The label data for the above examples
+        self.Remaining_Attributes = []  # The attributes that we haven't used in this section of the tree
+        self.node_list = {}  
+        self.parent = None  # This nodes parent node
 
 
 
@@ -79,20 +83,61 @@ def InfoGainMult(label_quantities, total_examples):
     return total
 
 
+# Method that constructs the tree recursively
+def SplitNode(sec_root, version):
+    #info_value = InfoGain()  # Here I need to calculate the total info gain using whatever method is desired.
+
+    Atts_data = {}  # Data for each of the attributes we can work with
+    for a in sec_root.Remaining_Attributes: # for this attribute ...
+        temp = AttributeData(a)
+        #Atts_data.update({a:temp})
+        for v in car_attribute_values[a]: # for each of the attributes values ...
+            temp.num_each_value.update({v: 0}) # 
+            temp.value_label_counts.update({v: {}})
+            for l in sec_root.Labels_in_Branch.label_values_and_counts:
+                temp.value_label_counts[v].update({l: 0})
+        Atts_data.update({a:temp})
+    
+    # with both of the dictionaries prepared, we can now fill them with the appropriate attribute data
+    for e in sec_root.Examples_in_Branch:
+        example = sec_root.Examples_in_Branch[e]
+        for a in sec_root.Remaining_Attributes:
+            data = Atts_data[a]
+            value = example.attributes[a]
+            data.num_each_value[value] += 1
+            data.value_label_counts[value][example.label] += 1
+
+    # After each of the attributes have been built and the data correctly parsed, we can then do our calculations to determine which one is
+    #  best to split on at this stage of the tree
+    # First we need to figure out what the gains for each of the attributes values are, then we can combine those to calculate the total gain
+    #  for the attribute. after we've done that for everything, we can decide which is the best, and use that to split this node on the tree.
+
+
 
 # Side note: calculation_version refers to which method of information gain to use. 
 #  If 0, use Entropy (or Info Gain); if 1, use ME; if 2, use Gini Index
-def DetermineTree(all_examples, total_labels, calculation_version):
+def DetermineTree(all_examples, total_labels, calculation_version, attributes_to_use):
     print("Not Done")
-    r = InfoGain(4, 2, 6)
-    s = GiniIndexMult([1, 1], 2)
+    root = Node()
+    root.Labels_in_Branch = total_labels
+    root.Examples_in_Branch = all_examples
+    root.Remaining_Attributes = attributes_to_use # I think this makes a copy of the original, so when this is edited the other stays unchanged
+
+    SplitNode(root, calculation_version)
 
 
-#Beginning of file that does the work I need
+
+car_attribute_values = { "buying": {"vhigh", "high", "med", "low"},
+                       "maint": {"vhigh", "high", "med", "low"},
+                      "doors": {"2", "3", "4", "5more"},
+                     "persons": {"2", "4", "more"},
+                    "lug_boot": {"small", "med", "big"},
+                   "safety": {"low", "med", "high"} }
+
 def main():
     car_labels = Label_data(0, { "unacc": 0, "acc": 0, "good": 0, "vgood": 0 })
 
-    #car_attributes_data  = [ ]
+    #car_attributes_data  = ["buying", "maint", "doors", "persons", "lug_boot", "safety"]
     #bank_attributes = [ ]
 
     train_examples = {}
@@ -103,7 +148,7 @@ def main():
     with open ( "car/train.csv" , 'r' ) as f:
         for l in f:
             terms = l.strip().split(',')
-            attributes = [terms[0], terms[1], terms[2], terms[3], terms[4], terms[5]]
+            attributes = {"buying":terms[0], "maint":terms[1], "doors": terms[2], "persons": terms[3], "lug_boot": terms[4], "safety": terms[5]}
             temp = Example(id, attributes, terms[6])
             train_examples.update({id: temp})
 
@@ -115,9 +160,9 @@ def main():
     
     # Upon completion of data extraction, calculate a decision tree for each method of info gain using the data
     #  We can add tree length as a factor later, right now I just want to get my code to make a tree without huge problems
-    DetermineTree(train_examples, car_labels, 0)
-    DetermineTree(train_examples, car_labels, 1)
-    DetermineTree(train_examples, car_labels, 2)
+    DetermineTree(train_examples, car_labels, 0, ["buying", "maint", "doors", "persons", "lug_boot", "safety"])
+    DetermineTree(train_examples, car_labels, 1, ["buying", "maint", "doors", "persons", "lug_boot", "safety"])
+    DetermineTree(train_examples, car_labels, 2, ["buying", "maint", "doors", "persons", "lug_boot", "safety"])
     
 
 

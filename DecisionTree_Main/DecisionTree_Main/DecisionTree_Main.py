@@ -35,8 +35,10 @@ class Label_data:
 # Class for the decision tree representation of the data
 class Node:
     def __init__(self):
-        self.Value_of_Parent_Attribute = None  # The value of the attribute this node was created with
-        self.Attribute = None  # Attribute this Node is splitting on
+        self.Prediction = None  # If a leaf, the label that this path would predict for the example
+        self.Value_of_Parent_Attribute = None  # The attribute that the parent node of this child split on
+        self.Attribute_Split_With = ""  # The attribute that this specific node split on (if applicable)
+        self.Value = ""  # Based on the attribute this nodes parent split on, this value refers to the subset of the parent's attribute group
         self.Examples_in_Branch = {}  # The examples that we can use in this section of the tree
         self.Labels_in_Branch = None  # The label data for the above examples
         self.Remaining_Attributes = []  # The attributes that we haven't used in this section of the tree
@@ -74,19 +76,37 @@ def GiniIndexMult(label_quantities, total_examples):
     return 1 - total
 #Don't know why, but for some reason something's wrong with GiniIndexMult?
 
+# Fixed multiple version so that if any fractions are 0, 0 is added to the base total as log(0) isn't defined, its the solution 
+#  mentioned in the slides and lectures for simplicity
 def InfoGainMult(label_quantities, total_examples):
     total = 0
     for label in label_quantities:
         frac = label/total_examples
-        entr = -(frac)*m.log2(frac)
-        total += entr
+        if frac == 0
+            total += 0
+        else
+            entr = -(frac)*m.log2(frac)
+            total += entr
     return total
 
 
 # Method that constructs the tree recursively
 def SplitNode(sec_root, version):
-    # The base cases would go here before any of the math occurs, as much of it depends on several pieces of information being non-zero
     # --- Base Cases ---
+    for l in sec_root.Labels_in_Branch.label_values_and_counts:
+        if sec_root.Labels_in_Branch.label_values_and_counts[l] == sec_root.Labels_in_Branch.total_num_values:
+            sec_root.Prediction = l
+            return
+
+    if len(sec_root.Remaining_Attributes) == 0:
+        current_best = ""
+        best = -1
+        for l in sec_root.Labels_in_Branch.label_values_and_counts:
+            if sec_root.Labels_in_Branch.label_values_and_counts[l] > best:
+                best = sec_root.Labels_in_Branch.label_values_and_counts[l]
+                current_best = l
+        sec_root.Prediction = current_best
+        return
 
     labels = []
     for l in sec_root.Labels_in_Branch.label_values_and_counts:
@@ -96,9 +116,8 @@ def SplitNode(sec_root, version):
     Atts_data = {}  # Data for each of the attributes we can work with
     for a in sec_root.Remaining_Attributes: # for this attribute ...
         temp = AttributeData(a)
-        #Atts_data.update({a:temp})
         for v in car_attribute_values[a]: # for each of the attributes values ...
-            temp.num_each_value.update({v: 0}) # 
+            temp.num_each_value.update({v: 0}) 
             temp.value_label_counts.update({v: {}})
             for l in sec_root.Labels_in_Branch.label_values_and_counts:
                 temp.value_label_counts[v].update({l: 0})
@@ -116,12 +135,11 @@ def SplitNode(sec_root, version):
 
     # After each of the attributes have been built and the data correctly parsed, we can then do our calculations to determine which one is
     #  best to split on at this stage of the tree
-    # First we need to figure out what the gains for each of the attributes values are, then we can combine those to calculate the total gain
-    #  for the attribute. after we've done that for everything, we can decide which is the best, and use that to split this node on the tree.
     gains = {}
     for a in sec_root.Remaining_Attributes:
         gains.update({a: 0})
 
+    # Need to add option of calculation method here, so that each of the three IG, ME, and GI can be used depending on which is desired
     for a in sec_root.Remaining_Attributes:
         value_total = 0
         current_attr = Atts_data[a]
@@ -134,7 +152,7 @@ def SplitNode(sec_root, version):
         # Pretty sure that with each of the values of the attribute determined, its just the overall gain minus this total
         gains[a] = overall_gain - value_total
 
-    # Here, its a simple check to determine which attribute has the highest score (and will be the one that we split on)
+    # Determine the best attribute to split on based on gathered data
     best_to_split = ""
     current = -1
     best = -1
@@ -144,8 +162,39 @@ def SplitNode(sec_root, version):
             best = current
             best_to_split = a
 
-    #TODO: with splitter decided, need to create node for each attribute subset, accurately distribute data, set up tree connections, 
-    #       fill in base cases so errors don't happen and tree properly completes, add different tree level functionality, (+ more)
+    sec_root.Attribute_Split_With = a # Set attribute this node will split on to the one with the best gain
+    attr_set = Atts_data[a]
+    for v in attr_set.num_each_value:
+        new = Node()
+        new.Value_of_Parent_Attribute = a
+        # new.Value = v  ## this is probably unneeded since we are accessing it with the att-value via the dictionary
+        new.parent = sec_root
+        new.Remaining_Attributes = sec_root.Remaining_Attributes[:]
+        new.Remaining_Attributes.remove(a)
+        new.Labels_in_Branch = sec_root.Labels_in_Branch
+        new.Labels_in_Branch.total_num_values = 0
+        for l in new.Labels_in_Branch.label_values_and_counts.values():
+            l = 0
+        # finish this part up by adding the node to the parents children list?
+        sec_root.node_list.update({v: new})
+
+    for example in sec_root.Examples_in_Branch.values():
+        attribute = sec_root.Attribute_Split_With
+        #ex_value = example.attributes[attribute]
+        valued_node = sec_root.node_list[example.attributes[attribute]]
+        valued_node.Examples_in_Branch.update({example.id: example})
+        valued_node.Labels_in_Branch.total_num_values += 1
+        valued_node.Labels_in_Branch.label_values_and_counts[example.label] += 1
+        
+    # With nodes created and added to the tree, all that is left is to run this work on those to further expand or complete the tree
+    for n in sec_root.node_list.values():
+        SplitNode(n, version)
+    # I don't think there is any more work after this point, all that is needed now is adding ability for method to build tree to certain
+    #  heights, make it so that the desired method of calculation is used based on the version variable, and that the tree works correctly
+    # Later will need to figure out how to make it so the tree can take certain variables and crunch them into binary variables, but I think
+    #  that that kind of work would happen in an earlier part of the algorithm.
+    # I think I am probably missing a few things, but I won't be able to make sure until later after I've rested a bit and can look over
+    #  everything with a fresh start, ready to (mostly) finish this part and hopefully start moving on by preparing something for HW2
 
 
 

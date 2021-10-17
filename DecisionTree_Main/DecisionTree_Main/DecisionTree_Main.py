@@ -42,13 +42,12 @@ class Node:
         self.Examples_in_Branch = {}  # The examples that we can use in this section of the tree
         self.Labels_in_Branch = None  # The label data for the above examples
         self.Remaining_Attributes = []  # The attributes that we haven't used in this section of the tree
-        self.node_list = {}  
+        self.node_list = {}
         self.parent = None  # This nodes parent node
 
 
 
-## Each of these are binary versions, where there are only two possibilities for the attribute
-# Can't quite remember, need to check
+# Method for calculating gain when labels are binary, but don't think this will every be needed considering mult version does the same thing
 def InfoGain(positive_examples, negative_examples, total_examples):
     pos = positive_examples/total_examples
     neg = negative_examples/total_examples
@@ -56,9 +55,13 @@ def InfoGain(positive_examples, negative_examples, total_examples):
 
 # Pretty sure this is correct, but need to double check
 def MajorityError(majority_examples, total_examples):
+    # Some att-values with have no examples to their subgroup, which means in the gains calculation its ME=0 times the proportion of this value
+    #  among the total examples in that subset
+    if total_examples == 0:
+        return 0
     return 1 - majority_examples/total_examples
     
-# Pretty sure this is correct, but need verification
+# Method for calculating GI when possible labels are binary, but I don't think this will be needed.
 def GiniIndex(positive_examples, negative_examples, total_examples):
     pos = positive_examples/total_examples
     neg = negative_examples/total_examples
@@ -74,7 +77,6 @@ def GiniIndexMult(label_quantities, total_examples):
         frac = labels/total_examples
         total += frac**2
     return 1 - total
-#Don't know why, but for some reason something's wrong with GiniIndexMult?
 
 # Fixed multiple version so that if any fractions are 0, 0 is added to the base total as log(0) isn't defined, its the solution 
 #  mentioned in the slides and lectures for simplicity
@@ -82,23 +84,32 @@ def InfoGainMult(label_quantities, total_examples):
     total = 0
     for label in label_quantities:
         frac = label/total_examples
-        if frac == 0
+        if frac == 0:
             total += 0
-        else
-            entr = -(frac)*m.log2(frac)
+        else:
+            entr = -(frac)*m.log(frac,len(label_quantities))
             total += entr
     return total
 
 
 # Method that constructs the tree recursively
-def SplitNode(sec_root, version):
+def SplitNode(sec_root, version, current_level, desired_level):
     # --- Base Cases ---
     for l in sec_root.Labels_in_Branch.label_values_and_counts:
         if sec_root.Labels_in_Branch.label_values_and_counts[l] == sec_root.Labels_in_Branch.total_num_values:
             sec_root.Prediction = l
             return
-
     if len(sec_root.Remaining_Attributes) == 0:
+        current_best = ""
+        best = -1
+        for l in sec_root.Labels_in_Branch.label_values_and_counts:
+            if sec_root.Labels_in_Branch.label_values_and_counts[l] > best:
+                best = sec_root.Labels_in_Branch.label_values_and_counts[l]
+                current_best = l
+        sec_root.Prediction = current_best
+        return
+    # Check on the depth of the tree would go here to see if we've reached the desired length
+    if current_level == desired_level:
         current_best = ""
         best = -1
         for l in sec_root.Labels_in_Branch.label_values_and_counts:
@@ -110,8 +121,17 @@ def SplitNode(sec_root, version):
 
     labels = []
     for l in sec_root.Labels_in_Branch.label_values_and_counts:
-        labels.append[l]
-    overall_gain = InfoGain(labels, sec_root.Labels_in_Branch.total_num_values)  # Here I need to calculate the total info gain using whatever method is desired.
+        labels.append(sec_root.Labels_in_Branch.label_values_and_counts[l])
+    if version == 0: # Here we use the standard Information Gain
+        overall_gain = InfoGainMult(labels, sec_root.Labels_in_Branch.total_num_values)
+    if version == 1: # Here we use Majority Error
+        best = -1;
+        for lab in labels:
+            if lab > best:
+                best = lab
+        overall_gain = MajorityError(best, sec_root.Labels_in_Branch.total_num_values)
+    if version == 2: # Here we use the Gini Index
+        overall_gain = GiniIndexMult(labels, sec_root.Labels_in_Branch.total_num_values)
 
     Atts_data = {}  # Data for each of the attributes we can work with
     for a in sec_root.Remaining_Attributes: # for this attribute ...
@@ -144,11 +164,29 @@ def SplitNode(sec_root, version):
         value_total = 0
         current_attr = Atts_data[a]
         for v in current_attr.num_each_value:
+            label_total_list = []
             for l in current_attr.value_label_counts[v].values():
                 label_total_list.append(l)
             total_for_value = current_attr.num_each_value[v]
-            value_sum = InfoGainMult(label_total, total_for_value) # Calculate this attr value's entropy
-            value_total += value_sum * (total_for_value / sec_root.Labels_in_Branch.total_num_values) # mult it by the proportion of the data it holds
+            if version == 0:
+                if total_for_value == 0:
+                    value_total += 0
+                else:
+                    value_sum = InfoGainMult(label_total_list, total_for_value) # Calculate this attr value's entropy
+                    value_total += value_sum * (total_for_value / sec_root.Labels_in_Branch.total_num_values) # mult it by the proportion of the data it holds
+            if version == 1:
+                best = -1
+                for label in label_total_list:
+                    if label > best:
+                        best = label
+                value_sum = MajorityError(best, total_for_value)
+                value_total += value_sum * (total_for_value / sec_root.Labels_in_Branch.total_num_values)
+            if version == 2:
+                if total_for_value == 0:
+                    value_total += 0
+                else:
+                    value_sum = GiniIndexMult(label_total_list, total_for_value)
+                    value_total += value_sum * (total_for_value / sec_root.Labels_in_Branch.total_num_values)
         # Pretty sure that with each of the values of the attribute determined, its just the overall gain minus this total
         gains[a] = overall_gain - value_total
 
@@ -171,24 +209,23 @@ def SplitNode(sec_root, version):
         new.parent = sec_root
         new.Remaining_Attributes = sec_root.Remaining_Attributes[:]
         new.Remaining_Attributes.remove(a)
-        new.Labels_in_Branch = sec_root.Labels_in_Branch
-        new.Labels_in_Branch.total_num_values = 0
-        for l in new.Labels_in_Branch.label_values_and_counts.values():
-            l = 0
-        # finish this part up by adding the node to the parents children list?
+        new.Labels_in_Branch = Label_data(0, {})
+        new.Labels_in_Branch.label_values_and_counts = sec_root.Labels_in_Branch.label_values_and_counts.copy()
+        new.Labels_in_Branch.total_num_values = 0  # same thing here as below
+        for l in new.Labels_in_Branch.label_values_and_counts:
+            new.Labels_in_Branch.label_values_and_counts[l] = 0  # change so we're reusing the data collected in the attribute set, just transfer the label values for this value-node
         sec_root.node_list.update({v: new})
-
+        
     for example in sec_root.Examples_in_Branch.values():
-        attribute = sec_root.Attribute_Split_With
         #ex_value = example.attributes[attribute]
-        valued_node = sec_root.node_list[example.attributes[attribute]]
-        valued_node.Examples_in_Branch.update({example.id: example})
+        valued_node = sec_root.node_list[example.attributes[a]]
+        valued_node.Examples_in_Branch.update({example.example_number: example})
         valued_node.Labels_in_Branch.total_num_values += 1
         valued_node.Labels_in_Branch.label_values_and_counts[example.label] += 1
         
     # With nodes created and added to the tree, all that is left is to run this work on those to further expand or complete the tree
     for n in sec_root.node_list.values():
-        SplitNode(n, version)
+        SplitNode(n, version, current_level+1, desired_level)
     # I don't think there is any more work after this point, all that is needed now is adding ability for method to build tree to certain
     #  heights, make it so that the desired method of calculation is used based on the version variable, and that the tree works correctly
     # Later will need to figure out how to make it so the tree can take certain variables and crunch them into binary variables, but I think
@@ -200,14 +237,46 @@ def SplitNode(sec_root, version):
 
 # Side note: calculation_version refers to which method of information gain to use. 
 #  If 0, use Entropy (or Info Gain); if 1, use ME; if 2, use Gini Index
-def DetermineTree(all_examples, total_labels, calculation_version, attributes_to_use):
-    print("Not Done")
+def DetermineTree(all_examples, total_labels, calculation_version, desired_level, attributes_to_use):
     root = Node()
     root.Labels_in_Branch = total_labels
     root.Examples_in_Branch = all_examples
     root.Remaining_Attributes = attributes_to_use # I think this makes a copy of the original, so when this is edited the other stays unchanged
 
-    SplitNode(root, calculation_version)
+    SplitNode(root, calculation_version, 0, desired_level)
+    return root
+
+
+## Method used to test tree on all examples and gather data for accuracy comparisons
+def TestTree(tree_root, examples_to_test):
+    example_predictions = {}
+    for e in examples_to_test:
+        example = examples_to_test[e]
+        current_node = tree_root
+        prediction_from_tree = None
+        while prediction_from_tree == None:
+            attr_to_follow = current_node.Attribute_Split_With
+            if attr_to_follow == "":
+                prediction_from_tree = current_node.Prediction
+            else:
+                ex_value = example.attributes[attr_to_follow]
+                current_node = current_node.node_list[ex_value]
+        example_predictions.update({example.example_number: prediction_from_tree})
+
+    # After deriving the prediction for each example, iterate through them to find the number of hits and misses
+    correct_predictions = 0
+    wrong_predictions = 0
+    for id in example_predictions:
+        prediction = example_predictions[id]
+        orig_example_label = examples_to_test[id].label
+        if prediction == orig_example_label:
+            correct_predictions += 1
+        else:
+            wrong_predictions += 1
+
+    accuracy = correct_predictions / len(examples_to_test)
+
+    print("The accuracy for this tree is: " + str(accuracy))
 
 
 
@@ -220,6 +289,7 @@ car_attribute_values = { "buying": {"vhigh", "high", "med", "low"},
 
 def main():
     car_labels = Label_data(0, { "unacc": 0, "acc": 0, "good": 0, "vgood": 0 })
+    car_labels_test = Label_data(0, { "unacc": 0, "acc": 0, "good": 0, "vgood": 0 })
 
     #car_attributes_data  = ["buying", "maint", "doors", "persons", "lug_boot", "safety"]
     #bank_attributes = [ ]
@@ -239,26 +309,40 @@ def main():
             car_labels.total_num_values += 1
             car_labels.label_values_and_counts[temp.label] += 1
             id += 1
-            #if id % 100 == 0:
-             # print(terms)
-    
-    # Upon completion of data extraction, calculate a decision tree for each method of info gain using the data
-    #  We can add tree length as a factor later, right now I just want to get my code to make a tree without huge problems
-    DetermineTree(train_examples, car_labels, 0, ["buying", "maint", "doors", "persons", "lug_boot", "safety"])
-    DetermineTree(train_examples, car_labels, 1, ["buying", "maint", "doors", "persons", "lug_boot", "safety"])
-    DetermineTree(train_examples, car_labels, 2, ["buying", "maint", "doors", "persons", "lug_boot", "safety"])
     
 
+    # Thinking of having the user pass in the level they want the tree to be built to, that would go here
+    # --- Request here ---
+    requested_level = 0;
+
+    # Upon completion of data extraction, calculate a decision tree for each method of info gain using the data
+    # When it comes to running tree up to certain levels, I could handle it as a console read based on what the person wants, but it
+    #  seems like it would be simpler to have the program make trees of multiple levels anyways because they want a tree of every level
+    #  possible.
+    GainRoot = DetermineTree(train_examples, car_labels, 0, 6, ["buying", "maint", "doors", "persons", "lug_boot", "safety"])
+    MERoot = DetermineTree(train_examples, car_labels, 1, 6, ["buying", "maint", "doors", "persons", "lug_boot", "safety"])
+    GiniRoot = DetermineTree(train_examples, car_labels, 2, 6, ["buying", "maint", "doors", "persons", "lug_boot", "safety"])
+    
+    TestTree(GainRoot, train_examples)
+    TestTree(MERoot, train_examples)
+    TestTree(GiniRoot, train_examples)
 
     
     id = 1
     with open( "car/test.csv", 'r') as f:
         for l in f:
             terms = l.strip().split(',')
-            # process test example
+            attributes = {"buying":terms[0], "maint":terms[1], "doors": terms[2], "persons": terms[3], "lug_boot": terms[4], "safety": terms[5]}
+            temp = Example(id, attributes, terms[6])
+            test_examples.update({id: temp})
+
+            car_labels_test.total_num_values += 1
+            car_labels_test.label_values_and_counts[temp.label] += 1
             id += 1
 
-
+    TestTree(GainRoot, test_examples)
+    TestTree(MERoot, test_examples)
+    TestTree(GiniRoot, test_examples)
 
 
 

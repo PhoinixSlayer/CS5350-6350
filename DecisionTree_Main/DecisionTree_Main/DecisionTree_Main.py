@@ -309,7 +309,6 @@ def main():
             car_labels.total_num_values += 1
             car_labels.label_values_and_counts[temp.label] += 1
             id += 1
-    
 
     # Thinking of having the user pass in the level they want the tree to be built to, that would go here
     # --- Request here ---

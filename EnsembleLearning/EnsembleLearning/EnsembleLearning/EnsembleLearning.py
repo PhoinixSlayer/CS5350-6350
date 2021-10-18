@@ -284,6 +284,21 @@ def TransformNumericals(examples, test_set):
                 test_set[ex].attributes[att] = "under"
 
 
+# Creates from the parent set a subset of 1000 unique examples
+#  No need to set label data because that is done when constructing the data subset for a subtree
+def CreateSubsetWithoutReplacement(train_examples):
+    used_examples = {}
+    new_sub_set = {}
+    while len(new_sub_set) < 1000:
+        rand_id = r.randint(1, len(train_examples))
+        if used_examples.has_key(rand_id):
+            continue
+        else:
+            new_sub_set.update({rand_id: train_examples[rand_id]})
+            used_examples.update({rand_id: rand_id})
+    return new_sub_set
+
+#
 def CreateDataSubsetWithReplacement(train_examples, desired_size, bank_labels):
     new_sub_set = {}
     newid = 1
@@ -435,7 +450,44 @@ def main():
     ## generate graph with this bagged tree data
     
     ### Repeat the above, but 100 times on a training set 1/5th the size of what is given
+    bags = {}
+    #bag_train_errors = {}  #It seems like in this section we won't be testing the trees on any of the train data, only constructing them
+    bag_test_errors = {}
+    bag_id = 1
+    for i in range(100):
+        training_subset = CreateSubsetWithoutReplacement(train_examples)
+        subtrees = {}
+        #subtree_train_errors = {}
+        subtree_test_errors = {}
+        id = 1
+        for i in range(500):
+            bank_train_labels = Label_data(0, {"yes": 0, "no": 0})
+            subset = CreateDataSubsetWithReplacement(training_subset, 500, bank_train_labels)
+            subtree = DetermineTree(subset, bank_train_labels, 0, 16, ["age", "job", "marital", "education", "default", "balance", "housing",
+                                                                 "loan", "contact", "day", "month", "duration", "campaign", "pdays",
+                                                                 "previous", "poutcome"])
+            #training_error = TestTree(subtree, train_examples)
+            #test_error = TestTree(subtree, test_examples)
+            #subtree_train_errors.update({id: training_error})
+            #subtree_test_errors.update({id: test_error})
+            subtrees.update({id: subtree})
+            id += 1
+        bags.update({bag_id: subtrees})
+        #bag_train_errors.update({bag_id: subtree_train_errors})
+        #bag_test_errors.update({bag_id: subtree_test_errors})
+        bag_id += 1
 
+    # Grab first tree from each predictor
+    first_trees = {}
+    first_trees_test_errors = {}
+    for bag_id in bags:
+        first_trees.update({bag_id: bags[bag_id][1]}) # Access each bag and pull the first subtree from each one's dictionary of trees
+        #first_trees_test_errors.update({bag_id: bag_test_errors[bag_id][1]}) # Access each bag and pull the test error rate for the first tree in that bag
+
+    # Need to compute the bias for each tree using its test results, and use all the predictions to compute the sample variance
+    #  Afterwards, use these to compute the general squared error
+    for f in first_trees:
+        tree = first_tree[f]
     
 
 

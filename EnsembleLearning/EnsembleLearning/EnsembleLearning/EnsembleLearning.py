@@ -1,5 +1,6 @@
 # Main file for Ensemble Learning homework portion.
 
+import random as r
 import math as m
 import pandas as pd
 
@@ -225,7 +226,7 @@ def DetermineTree(all_examples, total_labels, calculation_version, desired_level
 
 
 
-## Method used to test tree on all examples and gather data for accuracy comparisons
+## Method used to test tree on all examples provided and returns the error rate for this tree and data set
 def TestTree(tree_root, examples_to_test):
     example_predictions = {}
     for e in examples_to_test:
@@ -252,9 +253,11 @@ def TestTree(tree_root, examples_to_test):
         else:
             wrong_predictions += 1
 
-    accuracy = correct_predictions / len(examples_to_test)
+    error = wrong_predictions / len(examples_to_test)
 
-    print("The accuracy for this tree is: " + str(accuracy))
+    #print("The error rate for this tree is: " + str(error))
+
+    return error
 
 
 # Method that converts numerical attributes to binary attributes. Here, we're simply going to treat the two values as over the median or under,
@@ -279,6 +282,19 @@ def TransformNumericals(examples, test_set):
                 test_set[ex].attributes[att] = "over"
             else:
                 test_set[ex].attributes[att] = "under"
+
+
+def CreateDataSubsetWithReplacement(train_examples, desired_size, bank_labels):
+    new_sub_set = {}
+    newid = 1
+    for x in range(desired_size):
+        rand_id = r.randint(1, len(train_examples))
+        new_sub_set.update({newid: train_examples[rand_id]})
+        bank_labels.total_num_values += 1
+        bank_labels.label_values_and_counts[train_examples[rand_id].label] += 1
+        newid += 1
+    return new_sub_set
+
 
 
 # All attributes currently empty are the ones that need to be converted to binary attributes
@@ -320,8 +336,8 @@ def main():
             temp = Example(id, attributes, terms[16]) 
             train_examples.update({id: temp})
 
-            bank_train_labels.total_num_values += 1
-            bank_train_labels.label_values_and_counts[temp.label] += 1
+            #bank_train_labels.total_num_values += 1
+            #bank_train_labels.label_values_and_counts[temp.label] += 1
             id += 1
             
     id = 1
@@ -344,28 +360,81 @@ def main():
 
     # In this instance of the homework, I don't think tree depth is ever going to be beyond 1, so this won't be necessary here.
     #  I just need the tree method I've built to work with the bank data properly
-    requested_level = 0;
+    #requested_level = 0;
 
     ## Based on the assignment description we're only using the default entropy version, so for now all other versions won't be dealt with
     ## Additionally, normally we'd construct trees of size 1-16, but becuase they want stumps we'll only be using 1 for the depth limit
-    GainRoot = DetermineTree(train_examples, bank_train_labels, 0, 1, ["age", "job", "marital", "education", "default", "balance", "housing",
-                                                                 "loan", "contact", "day", "month", "duration", "campaign", "pdays",
-                                                                 "previous", "poutcome"])
+    #GainRoot = DetermineTree(train_examples, bank_train_labels, 0, 1, ["age", "job", "marital", "education", "default", "balance", "housing",
+    #                                                             "loan", "contact", "day", "month", "duration", "campaign", "pdays",
+    #                                                             "previous", "poutcome"])
     # The attributes I will need to convert to binary using the mean conversion are: age, balance, day, duration, campaign, pdays, previous.
 
     ## Won't be doing testing or anything yet, need the program to compress numerical and continuous data properly before even making
     ##  basic trees and getting the new work done.
-    TestTree(GainRoot, train_examples)
+    #standard_train_error = TestTree(GainRoot, train_examples)
 
     ## Different work is being done, so I don't think I'll be using all of these, especially not yet
-    TestTree(GainRoot, test_examples)
+    #standard_test_error = TestTree(GainRoot, test_examples)
 
 
     ### AdaBoost stuff will go here after this section header
 
 
     ### Bagging implementation goes here, going to work on this first because it seems like it needs the least modification
+    # For the beginning of the bagging work, need to create 500 trees, each using a sampled subset of the training data of size 1000 (basing it off of part c)
+    #  Then report, for each tree, the error rate on the total training and test sets
+    #subsets = {}
+    subtrees = {}
+    subtree_train_errors = {}
+    subtree_test_errors = {}
+    id = 1
+    for i in range(500):
+        bank_train_labels = Label_data(0, {"yes": 0, "no": 0})
+        subset = CreateDataSubsetWithReplacement(train_examples, 2500, bank_train_labels)
+        subtree = DetermineTree(subset, bank_train_labels, 0, 16, ["age", "job", "marital", "education", "default", "balance", "housing",
+                                                                 "loan", "contact", "day", "month", "duration", "campaign", "pdays",
+                                                                 "previous", "poutcome"])
 
+        training_error = TestTree(subtree, train_examples)
+        test_error = TestTree(subtree, test_examples)
+        subtree_train_errors.update({id: training_error})
+        subtree_test_errors.update({id: test_error})
+
+        subtrees.update({id: subtree})
+        id += 1
+    # After this completes, we have 500 subtrees in this bagged tree.
+
+
+    # Here is where I would generate the graphs that show how the training and test errors vary accross the 500 trees
+    num_trees = 1
+    tree_error = 0
+    bagged_error = 0
+    bagged_errors = []
+    for id in subtree_train_errors:
+        tree_error += subtree_train_errors[id]
+        bagged_error = tree_error / num_trees
+        bagged_errors.append(bagged_error)
+        if id % 50 == 0:
+            print("Bagged tree of size " + str(num_trees) + " has a train error of " + str(bagged_error))
+        num_trees += 1
+
+    ## Generate graph with this bagged tree data
+
+    num_trees = 1
+    tree_error = 0
+    bagged_error = 0
+    bagged_errors = []
+    for id in subtree_test_errors:
+        tree_error = subtree_test_errors[id]
+        bagged_error = tree_error / num_trees
+        bagged_errors.append(bagged_error)
+        if id % 50 == 0:
+            print("Bagged tree of size " + str(num_trees) + " has a test error of " + str(bagged_error))
+        num_trees += 1
+
+    ## generate graph with this bagged tree data
+    
+    ### Repeat the above, but 100 times on a training set 1/5th the size of what is given
 
     
 

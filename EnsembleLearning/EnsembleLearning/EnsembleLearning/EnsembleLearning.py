@@ -310,14 +310,14 @@ def main():
     test_examples = {}
     
     id = 1
-    with open ( "bank/train.csv" , 'r' ) as f:  # Should access data without issue, but need to test really quick to make sure
+    with open ( "bank/train.csv" , 'r' ) as f: 
         for l in f:
             terms = l.strip().split(',')
             attributes = {"age": terms[0], "job": terms[1], "marital": terms[2], "education": terms[3], "default": terms[4], 
                           "balance": terms[5], "housing": terms[6], "loan": terms[7], "contact": terms[8], "day": terms[9], 
                           "month": terms[10], "duration": terms[11], "campaign": terms[12], "pdays": terms[13], "previous": terms[14], 
                           "poutcome": terms[15]}
-            temp = Example(id, attributes, terms[16]) # 16 because the label for a bank example is the 17th value
+            temp = Example(id, attributes, terms[16]) 
             train_examples.update({id: temp})
 
             bank_train_labels.total_num_values += 1
@@ -353,22 +353,20 @@ def main():
                                                                  "previous", "poutcome"])
     # The attributes I will need to convert to binary using the mean conversion are: age, balance, day, duration, campaign, pdays, previous.
 
-    #MERoot = DetermineTree(train_examples, car_labels, 1, 6, ["buying", "maint", "doors", "persons", "lug_boot", "safety"])
-    #GiniRoot = DetermineTree(train_examples, car_labels, 2, 6, ["buying", "maint", "doors", "persons", "lug_boot", "safety"])
-    
     ## Won't be doing testing or anything yet, need the program to compress numerical and continuous data properly before even making
     ##  basic trees and getting the new work done.
     TestTree(GainRoot, train_examples)
-    #TestTree(MERoot, train_examples)
-    #TestTree(GiniRoot, train_examples)
-
-
-    # Might try making trees from the test data as well and seeing how the testing compares, but if I do it will have to be later.
 
     ## Different work is being done, so I don't think I'll be using all of these, especially not yet
     TestTree(GainRoot, test_examples)
-    # TestTree(MERoot, test_examples)
-    # TestTree(GiniRoot, test_examples)
+
+
+    ### AdaBoost stuff will go here after this section header
+
+
+    ### Bagging implementation goes here, going to work on this first because it seems like it needs the least modification
+
+
     
 
 

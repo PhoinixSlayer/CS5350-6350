@@ -3,6 +3,9 @@
 import random as r
 import math as m
 import pandas as pd
+# libraries for ease of convenience, used to create graphs with the collected data
+import matplotlib as mat
+import matplotlib.pyplot as pyp
 
 class Example:
     def __init__(self, ex_number, attributes, lbl):
@@ -34,7 +37,6 @@ class Node:
         self.parent = None  # This nodes parent node
 
 
-
 # Method for calculating gain when labels are binary
 def InfoGain(positive_examples, negative_examples, total_examples):
     pos = positive_examples/total_examples
@@ -42,8 +44,6 @@ def InfoGain(positive_examples, negative_examples, total_examples):
     return -(pos*m.log2(pos))-(neg*m.log2(neg))
 
 def MajorityError(majority_examples, total_examples):
-    # Some att-values with have no examples to their subgroup, which means in the gains calculation its ME=0 times the proportion of this value
-    #  among the total examples in that subset
     if total_examples == 0:
         return 0
     return 1 - majority_examples/total_examples
@@ -74,7 +74,6 @@ def InfoGainMult(label_quantities, total_examples):
             entr = -(frac)*m.log(frac,len(label_quantities))
             total += entr
     return total
-
 
 
 ## Method that constructs the tree recursively
@@ -212,7 +211,6 @@ def SplitNode(sec_root, version, current_level, desired_level):
     #  that that kind of work would happen in an earlier part of the algorithm.
 
 
-
 # Side note: calculation_version refers to which method of information gain to use. 
 #  If 0, use Entropy (or Info Gain); if 1, use ME; if 2, use Gini Index
 def DetermineTree(all_examples, total_labels, calculation_version, desired_level, attributes_to_use):
@@ -223,7 +221,6 @@ def DetermineTree(all_examples, total_labels, calculation_version, desired_level
 
     SplitNode(root, calculation_version, 0, desired_level)
     return root
-
 
 
 ## Method used to test tree on all examples provided and returns the error rate for this tree and data set
@@ -254,8 +251,6 @@ def TestTree(tree_root, examples_to_test):
             wrong_predictions += 1
 
     error = wrong_predictions / len(examples_to_test)
-
-    #print("The error rate for this tree is: " + str(error))
 
     return error
 
@@ -371,11 +366,6 @@ def main():
             id += 1
 
     TransformNumericals(train_examples, test_examples)
-    # After this point the numerical attributes should be properly represented as binary attributes based around the median in the data.
-
-    # In this instance of the homework, I don't think tree depth is ever going to be beyond 1, so this won't be necessary here.
-    #  I just need the tree method I've built to work with the bank data properly
-    #requested_level = 0;
 
     ## Based on the assignment description we're only using the default entropy version, so for now all other versions won't be dealt with
     ## Additionally, normally we'd construct trees of size 1-16, but becuase they want stumps we'll only be using 1 for the depth limit
@@ -383,13 +373,6 @@ def main():
     #                                                             "loan", "contact", "day", "month", "duration", "campaign", "pdays",
     #                                                             "previous", "poutcome"])
     # The attributes I will need to convert to binary using the mean conversion are: age, balance, day, duration, campaign, pdays, previous.
-
-    ## Won't be doing testing or anything yet, need the program to compress numerical and continuous data properly before even making
-    ##  basic trees and getting the new work done.
-    #standard_train_error = TestTree(GainRoot, train_examples)
-
-    ## Different work is being done, so I don't think I'll be using all of these, especially not yet
-    #standard_test_error = TestTree(GainRoot, test_examples)
 
 
     ### AdaBoost stuff will go here after this section header
@@ -419,35 +402,48 @@ def main():
         id += 1
     # After this completes, we have 500 subtrees in this bagged tree.
 
-
-    # Here is where I would generate the graphs that show how the training and test errors vary accross the 500 trees
+    # Compute error for training data set to create a graph from the data
     num_trees = 1
     tree_error = 0
     bagged_error = 0
     bagged_errors = []
+    tree_count = []
     for id in subtree_train_errors:
         tree_error += subtree_train_errors[id]
         bagged_error = tree_error / num_trees
         bagged_errors.append(bagged_error)
-        if id % 50 == 0:
-            print("Bagged tree of size " + str(num_trees) + " has a train error of " + str(bagged_error))
+        tree_count.append(id)
+        #if id % 50 == 0:
+        #    print("Bagged tree of size " + str(num_trees) + " has a train error of " + str(bagged_error))
         num_trees += 1
 
     ## Generate graph with this bagged tree data
+    pyp.plot(tree_count, bagged_errors, label = "Average Error for training set examples")
 
     num_trees = 1
     tree_error = 0
     bagged_error = 0
     bagged_errors = []
+    tree_count = []
     for id in subtree_test_errors:
         tree_error = subtree_test_errors[id]
         bagged_error = tree_error / num_trees
         bagged_errors.append(bagged_error)
-        if id % 50 == 0:
-            print("Bagged tree of size " + str(num_trees) + " has a test error of " + str(bagged_error))
+        tree_count.append(id) # don't know if reusing the variable will break the plot, will have to see with testing
+        #if id % 50 == 0:
+        #    print("Bagged tree of size " + str(num_trees) + " has a test error of " + str(bagged_error))
         num_trees += 1
 
     ## generate graph with this bagged tree data
+    pyp.plot(tree_count, bagged_errors, label = "Average Error for test set examples")
+    pyp.xlabel("Number of trees in bag")
+    pyp.ylabel("Average Prediction Error Rate")
+    pyp.title("Bag Prediction Error Averages for Training and Test data") # Placeholder, hopefully I'll come up with something better later
+    pyp.legend()
+    pyp.show()
+
+    # Save created plot for access and transfer later. (pretty sure results in Latex document will be whatever I most recently calculated
+    pyp.savefig('bagged_train_test_avg_errors.png') # Need to make sure works, but later
     
     ### Repeat the above, but 100 times on a training set 1/5th the size of what is given
     bags = {}

@@ -240,8 +240,8 @@ def TestTree(tree_root, examples_to_test):
         example_predictions.update({example.example_number: prediction_from_tree})
 
     # After deriving the prediction for each example, iterate through them to find the number of hits and misses
-    correct_predictions = 0
-    wrong_predictions = 0
+    correct_predictions = 0 # A prediction is 'correct' if the predicted label is the same as the examples true label (the label it came with)
+    wrong_predictions = 0   # A prediction is 'wrong' if it is not the same as the true label
     for id in example_predictions:
         prediction = example_predictions[id]
         orig_example_label = examples_to_test[id].label
@@ -251,8 +251,20 @@ def TestTree(tree_root, examples_to_test):
             wrong_predictions += 1
 
     error = wrong_predictions / len(examples_to_test)
-
     return error
+
+# Returns predicted label for the given example using the given tree for traversal and prediction
+def TestExample(tree, example):
+    current_node = tree
+    prediction_from_tree = None
+    while prediction_from_tree == None:
+        attr_to_follow = current_node.Attribute_Split_With
+        if attr_to_follow == "":
+            prediction_from_tree = current_node.Prediction
+        else:
+            ex_value = example.attributes[attr_to_follow]
+            current_node = current_node.node_list[ex_value]
+    return prediction_from_tree
 
 
 # Method that converts numerical attributes to binary attributes. Here, we're simply going to treat the two values as over the median or under,
@@ -448,7 +460,7 @@ def main():
     ### Repeat the above, but 100 times on a training set 1/5th the size of what is given
     bags = {}
     #bag_train_errors = {}  #It seems like in this section we won't be testing the trees on any of the train data, only constructing them
-    bag_test_errors = {}
+    #bag_test_errors = {}
     bag_id = 1
     for i in range(100):
         training_subset = CreateSubsetWithoutReplacement(train_examples)
@@ -456,9 +468,9 @@ def main():
         #subtree_train_errors = {}
         subtree_test_errors = {}
         id = 1
-        for i in range(500):
+        for i in range(100): # Lowered size, in order to test needs to complete first.
             bank_train_labels = Label_data(0, {"yes": 0, "no": 0})
-            subset = CreateDataSubsetWithReplacement(training_subset, 500, bank_train_labels)
+            subset = CreateDataSubsetWithReplacement(training_subset, 1000, bank_train_labels)
             subtree = DetermineTree(subset, bank_train_labels, 0, 16, ["age", "job", "marital", "education", "default", "balance", "housing",
                                                                  "loan", "contact", "day", "month", "duration", "campaign", "pdays",
                                                                  "previous", "poutcome"])
@@ -482,9 +494,92 @@ def main():
 
     # Need to compute the bias for each tree using its test results, and use all the predictions to compute the sample variance
     #  Afterwards, use these to compute the general squared error
-    for f in first_trees:
-        tree = first_tree[f]
-    
+    test_example_bias = {}
+    test_example_var = {}
+    #test_example_decomp = {}
+    for ex in test_examples:
+        example_predictions = []
+        num_yes = 0
+        num_no = 0
+        for f in first_trees:
+            tree = first_tree[f]
+            pred = TestExample(tree, test_examples[ex])
+            if pred == 'yes':
+                num_yes += 1
+            else:
+                num_no += 1 # if 'no' is 0, I don't think this variable will ever actually be used.
+            example_predictions.append(pred)
+        # If we're treating yes=1 no=0, bias would be (example_label_value - num_yes/total)^2
+        if test_examples[ex].label == "yes": # if label 'yes', bias is f(x) - E(h(x)), hence why it's the numerical label - the average
+            bias = (1 - num_yes/len(example_predictions))**2
+        else:
+            bias = (0 - num_yes/len(example_predictions))**2
+        var = 0 #Placeholder
+        for n in example_predictions:
+            if n == 'yes':
+                var += (1 - num_yes/len(example_predictions))**2
+            else:
+                var += (0 - num_yes/len(example_predictions))**2
+        var = var / (example_predictions - 1)
+
+        test_example_bias.update({ex: bias})
+        test_example_var.update({ex: var})
+        #test_example_decomp.update({ex: bias+var})
+    #After getting the bias and var for every test example, 
+    bias_avg = 0
+    var_avg = 0
+    for ex in test_example_bias:
+        bias_avg += test_example_bias[ex]
+        var_avg += test_example_var[ex]
+    # The big important values for first half of the homework part
+    bias_avg = bias_avg / len(test_example_bias)
+    var_avg = var_avg / len(test_example_var)
+    gse_avg = bias_avg + var_avg
+    print("The avg bias for 100 single tree learner is: " + str(bias_avg) + ", the avg var is: " + str(var_avg) + ", and the general squared error is: " + str(gse_avg))
+
+
+    ## Do same as above, but on all the trees in each bag.
+    test_example_bias = {}
+    test_example_var = {}
+    for ex in test_examples:
+        example = test_examples[ex]
+        example_predictions = []
+        num_yes = 0
+        #num_no = 0
+        for b in bags:
+            bag = bags[b]
+            for t in bag:
+                tree = bag[t]
+                pred = TestTree(tree, example)
+                if pred == "yes":
+                    num_yes += 1
+                example_predictions.append(pred)
+        # After getting the predictions for this example from every tree, compute bias and variance
+        if example.label == "yes":
+            bias = (1 - num_yes/len(example_predictions))**2
+        else:
+            bias = (0 - num_yes/len(example_predictions))**2
+        var = 0
+        for n in example_predictions:
+            if n == 'yes':
+                var += (1 - num_yes/len(example_predictions))**2
+            else:
+                var += (0 - num_yes/len(example_predictions))**2
+        var = var / (example_predictions - 1)
+        test_example_bias.update({ex: bias})
+        test_example_var.update({ex: var})
+
+    bias_avg = 0
+    var_avg = 0
+    for ex in test_example_bias:
+        bias_avg += test_example_bias[ex]
+        var_avg += test_example_var[ex]
+    # Important values for second half of the homework part
+    bias_avg = bias_avg / len(test_example_bias)
+    var_avg = var_avg / len(test_example_var)
+    gse_avg = bias_avg + var_avg
+    print("The avg bias for 100 bagged trees is: " + str(bias_avg) + ", the avg var is: " + str(var_avg) + ", and the gse is: " + str(gse_avg))
+
 
 
 # Execute program

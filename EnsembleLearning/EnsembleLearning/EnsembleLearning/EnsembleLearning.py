@@ -3,6 +3,9 @@
 import random as r
 import math as m
 import pandas as pd
+# libraries for ease of convenience, used to create graphs with the collected data
+import matplotlib as mat
+import matplotlib.pyplot as pyp
 
 class Example:
     def __init__(self, ex_number, attributes, lbl):
@@ -34,7 +37,6 @@ class Node:
         self.parent = None  # This nodes parent node
 
 
-
 # Method for calculating gain when labels are binary
 def InfoGain(positive_examples, negative_examples, total_examples):
     pos = positive_examples/total_examples
@@ -42,8 +44,6 @@ def InfoGain(positive_examples, negative_examples, total_examples):
     return -(pos*m.log2(pos))-(neg*m.log2(neg))
 
 def MajorityError(majority_examples, total_examples):
-    # Some att-values with have no examples to their subgroup, which means in the gains calculation its ME=0 times the proportion of this value
-    #  among the total examples in that subset
     if total_examples == 0:
         return 0
     return 1 - majority_examples/total_examples
@@ -74,7 +74,6 @@ def InfoGainMult(label_quantities, total_examples):
             entr = -(frac)*m.log(frac,len(label_quantities))
             total += entr
     return total
-
 
 
 ## Method that constructs the tree recursively
@@ -212,7 +211,6 @@ def SplitNode(sec_root, version, current_level, desired_level):
     #  that that kind of work would happen in an earlier part of the algorithm.
 
 
-
 # Side note: calculation_version refers to which method of information gain to use. 
 #  If 0, use Entropy (or Info Gain); if 1, use ME; if 2, use Gini Index
 def DetermineTree(all_examples, total_labels, calculation_version, desired_level, attributes_to_use):
@@ -223,7 +221,6 @@ def DetermineTree(all_examples, total_labels, calculation_version, desired_level
 
     SplitNode(root, calculation_version, 0, desired_level)
     return root
-
 
 
 ## Method used to test tree on all examples provided and returns the error rate for this tree and data set
@@ -243,8 +240,8 @@ def TestTree(tree_root, examples_to_test):
         example_predictions.update({example.example_number: prediction_from_tree})
 
     # After deriving the prediction for each example, iterate through them to find the number of hits and misses
-    correct_predictions = 0
-    wrong_predictions = 0
+    correct_predictions = 0 # A prediction is 'correct' if the predicted label is the same as the examples true label (the label it came with)
+    wrong_predictions = 0   # A prediction is 'wrong' if it is not the same as the true label
     for id in example_predictions:
         prediction = example_predictions[id]
         orig_example_label = examples_to_test[id].label
@@ -254,10 +251,20 @@ def TestTree(tree_root, examples_to_test):
             wrong_predictions += 1
 
     error = wrong_predictions / len(examples_to_test)
-
-    #print("The error rate for this tree is: " + str(error))
-
     return error
+
+# Returns predicted label for the given example using the given tree for traversal and prediction
+def TestExample(tree, example):
+    current_node = tree
+    prediction_from_tree = None
+    while prediction_from_tree == None:
+        attr_to_follow = current_node.Attribute_Split_With
+        if attr_to_follow == "":
+            prediction_from_tree = current_node.Prediction
+        else:
+            ex_value = example.attributes[attr_to_follow]
+            current_node = current_node.node_list[ex_value]
+    return prediction_from_tree
 
 
 # Method that converts numerical attributes to binary attributes. Here, we're simply going to treat the two values as over the median or under,
@@ -289,13 +296,15 @@ def TransformNumericals(examples, test_set):
 def CreateSubsetWithoutReplacement(train_examples):
     used_examples = {}
     new_sub_set = {}
+    newid = 1
     while len(new_sub_set) < 1000:
         rand_id = r.randint(1, len(train_examples))
-        if used_examples.has_key(rand_id):
+        if rand_id in used_examples.keys():
             continue
         else:
-            new_sub_set.update({rand_id: train_examples[rand_id]})
+            new_sub_set.update({newid: train_examples[rand_id]})
             used_examples.update({rand_id: rand_id})
+            newid += 1
     return new_sub_set
 
 #
@@ -351,8 +360,8 @@ def main():
             temp = Example(id, attributes, terms[16]) 
             train_examples.update({id: temp})
 
-            #bank_train_labels.total_num_values += 1
-            #bank_train_labels.label_values_and_counts[temp.label] += 1
+            bank_train_labels.total_num_values += 1
+            bank_train_labels.label_values_and_counts[temp.label] += 1
             id += 1
             
     id = 1
@@ -371,110 +380,90 @@ def main():
             id += 1
 
     TransformNumericals(train_examples, test_examples)
-    # After this point the numerical attributes should be properly represented as binary attributes based around the median in the data.
-
-    # In this instance of the homework, I don't think tree depth is ever going to be beyond 1, so this won't be necessary here.
-    #  I just need the tree method I've built to work with the bank data properly
-    #requested_level = 0;
-
-    ## Based on the assignment description we're only using the default entropy version, so for now all other versions won't be dealt with
-    ## Additionally, normally we'd construct trees of size 1-16, but becuase they want stumps we'll only be using 1 for the depth limit
-    #GainRoot = DetermineTree(train_examples, bank_train_labels, 0, 1, ["age", "job", "marital", "education", "default", "balance", "housing",
-    #                                                             "loan", "contact", "day", "month", "duration", "campaign", "pdays",
-    #                                                             "previous", "poutcome"])
-    # The attributes I will need to convert to binary using the mean conversion are: age, balance, day, duration, campaign, pdays, previous.
-
-    ## Won't be doing testing or anything yet, need the program to compress numerical and continuous data properly before even making
-    ##  basic trees and getting the new work done.
-    #standard_train_error = TestTree(GainRoot, train_examples)
-
-    ## Different work is being done, so I don't think I'll be using all of these, especially not yet
-    #standard_test_error = TestTree(GainRoot, test_examples)
 
 
-    ### AdaBoost stuff will go here after this section header
+    ### AdaBoost Code
 
 
-    ### Bagging implementation goes here, going to work on this first because it seems like it needs the least modification
-    # For the beginning of the bagging work, need to create 500 trees, each using a sampled subset of the training data of size 1000 (basing it off of part c)
-    #  Then report, for each tree, the error rate on the total training and test sets
-    #subsets = {}
+
+    ### Bagging implementation
     subtrees = {}
     subtree_train_errors = {}
     subtree_test_errors = {}
     id = 1
-    for i in range(500):
-        bank_train_labels = Label_data(0, {"yes": 0, "no": 0})
-        subset = CreateDataSubsetWithReplacement(train_examples, 2500, bank_train_labels)
-        subtree = DetermineTree(subset, bank_train_labels, 0, 16, ["age", "job", "marital", "education", "default", "balance", "housing",
-                                                                 "loan", "contact", "day", "month", "duration", "campaign", "pdays",
-                                                                 "previous", "poutcome"])
+    #for i in range(500):
+    #    bank_train_labels = Label_data(0, {"yes": 0, "no": 0})
+    #    subset = CreateDataSubsetWithReplacement(train_examples, 2500, bank_train_labels)
+    #    subtree = DetermineTree(subset, bank_train_labels, 0, 16, ["age", "job", "marital", "education", "default", "balance", "housing",
+    #                                                             "loan", "contact", "day", "month", "duration", "campaign", "pdays",
+    #                                                             "previous", "poutcome"])
 
-        training_error = TestTree(subtree, train_examples)
-        test_error = TestTree(subtree, test_examples)
-        subtree_train_errors.update({id: training_error})
-        subtree_test_errors.update({id: test_error})
-
-        subtrees.update({id: subtree})
-        id += 1
+    #    training_error = TestTree(subtree, train_examples)
+    #    test_error = TestTree(subtree, test_examples)
+    #    subtree_train_errors.update({id: training_error})
+    #    subtree_test_errors.update({id: test_error})
+    #    subtrees.update({id: subtree})
+    #    id += 1
     # After this completes, we have 500 subtrees in this bagged tree.
 
-
-    # Here is where I would generate the graphs that show how the training and test errors vary accross the 500 trees
+    # Compute error for training data set to create a graph from the data
     num_trees = 1
     tree_error = 0
     bagged_error = 0
     bagged_errors = []
-    for id in subtree_train_errors:
-        tree_error += subtree_train_errors[id]
-        bagged_error = tree_error / num_trees
-        bagged_errors.append(bagged_error)
-        if id % 50 == 0:
-            print("Bagged tree of size " + str(num_trees) + " has a train error of " + str(bagged_error))
-        num_trees += 1
+    tree_count = []
+    #for id in subtree_train_errors:
+    #    tree_error += subtree_train_errors[id]
+    #    bagged_error = tree_error / num_trees
+    #    bagged_errors.append(bagged_error)
+    #    tree_count.append(id)
+    #    num_trees += 1
 
     ## Generate graph with this bagged tree data
+    #pyp.plot(tree_count, bagged_errors, label = "Average Error for training set examples")
 
     num_trees = 1
     tree_error = 0
     bagged_error = 0
     bagged_errors = []
-    for id in subtree_test_errors:
-        tree_error = subtree_test_errors[id]
-        bagged_error = tree_error / num_trees
-        bagged_errors.append(bagged_error)
-        if id % 50 == 0:
-            print("Bagged tree of size " + str(num_trees) + " has a test error of " + str(bagged_error))
-        num_trees += 1
+    tree_count = []
+    #for id in subtree_test_errors:
+    #    tree_error = subtree_test_errors[id]
+    #    bagged_error = tree_error / num_trees
+    #    bagged_errors.append(bagged_error)
+    #    tree_count.append(id) 
+    #    num_trees += 1
 
     ## generate graph with this bagged tree data
+    #pyp.plot(tree_count, bagged_errors, label = "Average Error for test set examples")
+    #pyp.xlabel("Number of trees in bag")
+    #pyp.ylabel("Average Prediction Error Rate")
+    #pyp.title("Bag Prediction Error Averages for Training and Test data") # Placeholder, hopefully I'll come up with something better later
+    #pyp.legend()
+    #pyp.show()
+
+    # Save created plot for access and transfer later. (pretty sure results in Latex document will be whatever I most recently calculated
+    #pyp.savefig('bagged_train_test_avg_errors.png')
     
     ### Repeat the above, but 100 times on a training set 1/5th the size of what is given
+    # - Need to do testing later, was taking too long with previous settings, Need to figure out if it actually gets through everything
+    # -- later, then I can move on after it outputs to figuring out the other pieces of this coding portion and how to separate them so the
+    # -- person running the code can run the portion they want
     bags = {}
-    #bag_train_errors = {}  #It seems like in this section we won't be testing the trees on any of the train data, only constructing them
-    bag_test_errors = {}
     bag_id = 1
     for i in range(100):
-        training_subset = CreateSubsetWithoutReplacement(train_examples)
+        training_subset = CreateSubsetWithoutReplacement(train_examples) # with current settings, making a bag takes a little less than ~2 minutes
         subtrees = {}
-        #subtree_train_errors = {}
-        subtree_test_errors = {}
         id = 1
-        for i in range(500):
+        for i in range(100): # Lowered size so it completes faster, need the program to work before putting it through the ringer
             bank_train_labels = Label_data(0, {"yes": 0, "no": 0})
             subset = CreateDataSubsetWithReplacement(training_subset, 500, bank_train_labels)
             subtree = DetermineTree(subset, bank_train_labels, 0, 16, ["age", "job", "marital", "education", "default", "balance", "housing",
                                                                  "loan", "contact", "day", "month", "duration", "campaign", "pdays",
                                                                  "previous", "poutcome"])
-            #training_error = TestTree(subtree, train_examples)
-            #test_error = TestTree(subtree, test_examples)
-            #subtree_train_errors.update({id: training_error})
-            #subtree_test_errors.update({id: test_error})
             subtrees.update({id: subtree})
             id += 1
         bags.update({bag_id: subtrees})
-        #bag_train_errors.update({bag_id: subtree_train_errors})
-        #bag_test_errors.update({bag_id: subtree_test_errors})
         bag_id += 1
 
     # Grab first tree from each predictor
@@ -482,13 +471,90 @@ def main():
     first_trees_test_errors = {}
     for bag_id in bags:
         first_trees.update({bag_id: bags[bag_id][1]}) # Access each bag and pull the first subtree from each one's dictionary of trees
-        #first_trees_test_errors.update({bag_id: bag_test_errors[bag_id][1]}) # Access each bag and pull the test error rate for the first tree in that bag
+        
+    # Compute bias and variance for each test example using 100 individual tree predictors
+    test_example_bias = {}
+    test_example_var = {}
+    #test_example_decomp = {}
+    for ex in test_examples:
+        example_predictions = []
+        num_yes = 0
+        for f in first_trees:
+            tree = first_tree[f]
+            pred = TestExample(tree, test_examples[ex])
+            if pred == 'yes':
+                num_yes += 1
+            example_predictions.append(pred)
+        # If we're treating yes=1 no=0, bias would be (example_label_value - num_yes/total)^2
+        if test_examples[ex].label == "yes": # if label 'yes', bias is f(x) - E(h(x)), hence why it's the numerical label - the average
+            bias = (1 - num_yes/len(example_predictions))**2
+        else:
+            bias = (0 - num_yes/len(example_predictions))**2
+        var = 0 #Placeholder
+        for n in example_predictions:
+            if n == 'yes':
+                var += (1 - num_yes/len(example_predictions))**2
+            else:
+                var += (0 - num_yes/len(example_predictions))**2
+        var = var / (example_predictions - 1)
 
-    # Need to compute the bias for each tree using its test results, and use all the predictions to compute the sample variance
-    #  Afterwards, use these to compute the general squared error
-    for f in first_trees:
-        tree = first_tree[f]
-    
+        test_example_bias.update({ex: bias})
+        test_example_var.update({ex: var})
+    #After getting the bias and var for every test example, 
+    bias_avg = 0
+    var_avg = 0
+    for ex in test_example_bias:
+        bias_avg += test_example_bias[ex]
+        var_avg += test_example_var[ex]
+    # The big important values for first half of the homework part
+    bias_avg = bias_avg / len(test_example_bias)
+    var_avg = var_avg / len(test_example_var)
+    gse_avg = bias_avg + var_avg
+    print("The avg bias for 100 single tree learner is: " + str(bias_avg) + ", the avg var is: " + str(var_avg) + ", and the general squared error is: " + str(gse_avg))
+
+
+    ## Do same as above, but on all the trees in each bag.
+    test_example_bias = {}
+    test_example_var = {}
+    for ex in test_examples:
+        example = test_examples[ex]
+        example_predictions = []
+        num_yes = 0
+        #num_no = 0
+        for b in bags:
+            bag = bags[b]
+            for t in bag:
+                tree = bag[t]
+                pred = TestTree(tree, example)
+                if pred == "yes":
+                    num_yes += 1
+                example_predictions.append(pred)
+        # After getting the predictions for this example from every tree, compute bias and variance
+        if example.label == "yes":
+            bias = (1 - num_yes/len(example_predictions))**2
+        else:
+            bias = (0 - num_yes/len(example_predictions))**2
+        var = 0
+        for n in example_predictions:
+            if n == 'yes':
+                var += (1 - num_yes/len(example_predictions))**2
+            else:
+                var += (0 - num_yes/len(example_predictions))**2
+        var = var / (example_predictions - 1)
+        test_example_bias.update({ex: bias})
+        test_example_var.update({ex: var})
+
+    bias_avg = 0
+    var_avg = 0
+    for ex in test_example_bias:
+        bias_avg += test_example_bias[ex]
+        var_avg += test_example_var[ex]
+    # Important values for second half of the homework part
+    bias_avg = bias_avg / len(test_example_bias)
+    var_avg = var_avg / len(test_example_var)
+    gse_avg = bias_avg + var_avg
+    print("The avg bias for 100 bagged trees is: " + str(bias_avg) + ", the avg var is: " + str(var_avg) + ", and the gse is: " + str(gse_avg))
+
 
 
 # Execute program

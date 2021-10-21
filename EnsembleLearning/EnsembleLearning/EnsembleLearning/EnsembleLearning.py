@@ -76,6 +76,19 @@ def InfoGainMult(label_quantities, total_examples):
     return total
 
 
+# Method used to select random attributes from a total selection base
+def PickRandomFrom(available_attributes):
+    # This is a very hackjob way of going about it, it should work, but it will be very bad performance wise.
+    used_attr = {}
+    attr_subset = []
+    while len(attr_subset) < RANDOM_LIMIT:
+        rand = r.randint(1, len(available_attributes))
+        if available_attributes[rand-1] in attr_subset:
+            continue
+        else:
+            attr_subset.append(available_attributes[rand-1])
+
+
 ## Method that constructs the tree recursively
 # Doesn't make the most accurate tree as of right now, but it's at least something to start with
 def SplitNode(sec_root, version, current_level, desired_level):
@@ -104,7 +117,7 @@ def SplitNode(sec_root, version, current_level, desired_level):
         sec_root.Prediction = current_best
         return
 
-
+    # Compute the overall gain for this section of the tree
     labels = []
     for l in sec_root.Labels_in_Branch.label_values_and_counts:
         labels.append(sec_root.Labels_in_Branch.label_values_and_counts[l])
@@ -119,20 +132,33 @@ def SplitNode(sec_root, version, current_level, desired_level):
     if version == 2: # Here we use the Gini Index
         overall_gain = GiniIndexMult(labels, sec_root.Labels_in_Branch.total_num_values)
 
-    Atts_data = {}
-    for a in sec_root.Remaining_Attributes: # for this attribute ...
-        temp = AttributeData(a)
-        for v in bank_attribute_values[a]: # for each of the attributes values ...
-            temp.num_each_value.update({v: 0}) 
-            temp.value_label_counts.update({v: {}})
-            for l in sec_root.Labels_in_Branch.label_values_and_counts:
-                temp.value_label_counts[v].update({l: 0})
-        Atts_data.update({a:temp})
+    # Assemble data structures for the attributes that we can use at this stage for later calculations to determine best split.
+    if DOING_FORESTS:
+        random_attributes = PickRandomFrom(sec_root.Remaining_Attributes)
+        Atts_data = {}
+        for a in random_attributes: # for this attribute ...
+            temp = AttributeData(a)
+            for v in bank_attribute_values[a]: # for each of the attributes values ...
+                temp.num_each_value.update({v: 0}) 
+                temp.value_label_counts.update({v: {}})
+                for l in sec_root.Labels_in_Branch.label_values_and_counts:
+                    temp.value_label_counts[v].update({l: 0})
+            Atts_data.update({a:temp})
+    else:
+        Atts_data = {}
+        for a in sec_root.Remaining_Attributes: # for this attribute ...
+            temp = AttributeData(a)
+            for v in bank_attribute_values[a]: # for each of the attributes values ...
+                temp.num_each_value.update({v: 0}) 
+                temp.value_label_counts.update({v: {}})
+                for l in sec_root.Labels_in_Branch.label_values_and_counts:
+                    temp.value_label_counts[v].update({l: 0})
+            Atts_data.update({a:temp})
     
     # With both of the dictionaries prepared, we can now fill them with the appropriate attribute data
     for e in sec_root.Examples_in_Branch:
         example = sec_root.Examples_in_Branch[e]
-        for a in sec_root.Remaining_Attributes:
+        for a in Atts_data:
             data = Atts_data[a]
             value = example.attributes[a]
             data.num_each_value[value] += 1
@@ -141,10 +167,10 @@ def SplitNode(sec_root, version, current_level, desired_level):
     # After each of the attributes have been built and the data correctly parsed, we can then do our calculations to determine which one is
     #  best to split on at this stage of the tree
     gains = {}
-    for a in sec_root.Remaining_Attributes:
+    for a in Atts_data:
         gains.update({a: 0})
 
-    for a in sec_root.Remaining_Attributes:
+    for a in Atts_data:
         value_total = 0
         current_attr = Atts_data[a]
         for v in current_attr.num_each_value:
@@ -203,12 +229,12 @@ def SplitNode(sec_root, version, current_level, desired_level):
         valued_node.Examples_in_Branch.update({example.example_number: example})
         valued_node.Labels_in_Branch.total_num_values += 1
         valued_node.Labels_in_Branch.label_values_and_counts[example.label] += 1
+
+    # It looks like memory might not actually be a problem, I'm going to delay that until it becomes legitimately relevant
         
     # With nodes created and added to the tree, all that is left is to run this work on those to further expand or complete the tree
     for n in sec_root.node_list.values():
         SplitNode(n, version, current_level+1, desired_level)
-    # Later will need to figure out how to make it so the tree can take certain variables and crunch them into binary variables, but I think
-    #  that that kind of work would happen in an earlier part of the algorithm.
 
 
 # Side note: calculation_version refers to which method of information gain to use. 
@@ -253,6 +279,7 @@ def TestTree(tree_root, examples_to_test):
     error = wrong_predictions / len(examples_to_test)
     return error
 
+
 # Returns predicted label for the given example using the given tree for traversal and prediction
 def TestExample(tree, example):
     current_node = tree
@@ -293,6 +320,10 @@ def TransformNumericals(examples, test_set):
 
 # Creates from the parent set a subset of 1000 unique examples
 #  No need to set label data because that is done when constructing the data subset for a subtree
+## This is likely very inefficient, I want to look into how to optimize this as I think the way that I'm randomly selecting
+##  examples to keep is what is making it take so long sometimes, as if the rng gives the same number, or numbers that have already
+##  been used, it will repeat and loop a lot, often longer than wanted, so if I can I would like to figure out a better way to
+##  generate 1000 unique random numbers.
 def CreateSubsetWithoutReplacement(train_examples):
     used_examples = {}
     new_sub_set = {}
@@ -320,6 +351,10 @@ def CreateDataSubsetWithReplacement(train_examples, desired_size, bank_labels):
     return new_sub_set
 
 
+
+# Global variables for the forests problem
+DOING_FORESTS = False
+RANDOM_LIMIT = 0
 
 # All attributes currently empty are the ones that need to be converted to binary attributes
 bank_attribute_values = {"age": {"over", "under"}, 
@@ -359,7 +394,6 @@ def main():
                           "poutcome": terms[15]}
             temp = Example(id, attributes, terms[16]) 
             train_examples.update({id: temp})
-
             bank_train_labels.total_num_values += 1
             bank_train_labels.label_values_and_counts[temp.label] += 1
             id += 1
@@ -374,7 +408,6 @@ def main():
                           "poutcome": terms[15]}
             temp = Example(id, attributes, terms[16])
             test_examples.update({id: temp})
-
             bank_test_labels.total_num_values += 1
             bank_test_labels.label_values_and_counts[temp.label] += 1
             id += 1
@@ -385,7 +418,7 @@ def main():
     ### AdaBoost Code
 
 
-
+    #####################################################################################################################################
     ### Bagging implementation
     subtrees = {}
     subtree_train_errors = {}
@@ -428,7 +461,7 @@ def main():
     bagged_errors = []
     tree_count = []
     #for id in subtree_test_errors:
-    #    tree_error = subtree_test_errors[id]
+    #    tree_error += subtree_test_errors[id]
     #    bagged_error = tree_error / num_trees
     #    bagged_errors.append(bagged_error)
     #    tree_count.append(id) 
@@ -438,24 +471,27 @@ def main():
     #pyp.plot(tree_count, bagged_errors, label = "Average Error for test set examples")
     #pyp.xlabel("Number of trees in bag")
     #pyp.ylabel("Average Prediction Error Rate")
-    #pyp.title("Bag Prediction Error Averages for Training and Test data") # Placeholder, hopefully I'll come up with something better later
+    #pyp.title("Bagging Prediction Error Averages for Training and Test data") # Placeholder, hopefully I'll come up with something better later
     #pyp.legend()
-    #pyp.show()
+    #pyp.draw()
 
     # Save created plot for access and transfer later. (pretty sure results in Latex document will be whatever I most recently calculated
     #pyp.savefig('bagged_train_test_avg_errors.png')
     
+
+    ##################################################################################################################################
     ### Repeat the above, but 100 times on a training set 1/5th the size of what is given
     # - Need to do testing later, was taking too long with previous settings, Need to figure out if it actually gets through everything
     # -- later, then I can move on after it outputs to figuring out the other pieces of this coding portion and how to separate them so the
     # -- person running the code can run the portion they want
     bags = {}
+    training_subset = {}
     bag_id = 1
     for i in range(100):
-        training_subset = CreateSubsetWithoutReplacement(train_examples) # with current settings, making a bag takes a little less than ~2 minutes
+        training_subset = CreateSubsetWithoutReplacement(train_examples)
         subtrees = {}
         id = 1
-        for i in range(100): # Lowered size so it completes faster, need the program to work before putting it through the ringer
+        for i in range(200): # Lowered size because my code completes too slowly in this section, it works?, but not nearly fast enough
             bank_train_labels = Label_data(0, {"yes": 0, "no": 0})
             subset = CreateDataSubsetWithReplacement(training_subset, 500, bank_train_labels)
             subtree = DetermineTree(subset, bank_train_labels, 0, 16, ["age", "job", "marital", "education", "default", "balance", "housing",
@@ -464,6 +500,7 @@ def main():
             subtrees.update({id: subtree})
             id += 1
         bags.update({bag_id: subtrees})
+        print("Finished making bag " + str(bag_id))
         bag_id += 1
 
     # Grab first tree from each predictor
@@ -472,6 +509,7 @@ def main():
     for bag_id in bags:
         first_trees.update({bag_id: bags[bag_id][1]}) # Access each bag and pull the first subtree from each one's dictionary of trees
         
+    print("Begun computing bias and var for 100 individual tree predictors.")
     # Compute bias and variance for each test example using 100 individual tree predictors
     test_example_bias = {}
     test_example_var = {}
@@ -480,7 +518,7 @@ def main():
         example_predictions = []
         num_yes = 0
         for f in first_trees:
-            tree = first_tree[f]
+            tree = first_trees[f]
             pred = TestExample(tree, test_examples[ex])
             if pred == 'yes':
                 num_yes += 1
@@ -500,6 +538,8 @@ def main():
 
         test_example_bias.update({ex: bias})
         test_example_var.update({ex: var})
+        if ex % 100 == 0:
+            print("Completed the bias and var calculations for the " + str(ex) + "th test example")
     #After getting the bias and var for every test example, 
     bias_avg = 0
     var_avg = 0
@@ -512,7 +552,7 @@ def main():
     gse_avg = bias_avg + var_avg
     print("The avg bias for 100 single tree learner is: " + str(bias_avg) + ", the avg var is: " + str(var_avg) + ", and the general squared error is: " + str(gse_avg))
 
-
+    print("Begun predicting bias and var for Bagged trees.")
     ## Do same as above, but on all the trees in each bag.
     test_example_bias = {}
     test_example_var = {}
@@ -520,7 +560,6 @@ def main():
         example = test_examples[ex]
         example_predictions = []
         num_yes = 0
-        #num_no = 0
         for b in bags:
             bag = bags[b]
             for t in bag:
@@ -543,6 +582,8 @@ def main():
         var = var / (example_predictions - 1)
         test_example_bias.update({ex: bias})
         test_example_var.update({ex: var})
+        if ex % 100 == 0:
+            print("Completed the bias and var calculations for the " + str(ex) + "th test example.")
 
     bias_avg = 0
     var_avg = 0
@@ -554,6 +595,72 @@ def main():
     var_avg = var_avg / len(test_example_var)
     gse_avg = bias_avg + var_avg
     print("The avg bias for 100 bagged trees is: " + str(bias_avg) + ", the avg var is: " + str(var_avg) + ", and the gse is: " + str(gse_avg))
+
+
+    ####################################################################################################################################
+    ### Code for Bagged Forests section.
+    DOING_FORESTS = True
+    RANDOM_LIMIT = 2
+
+    subtrees = {}
+    subtree_train_errors = {}
+    subtree_test_errors = {}
+    id = 1
+    for i in range(500):
+        bank_train_labels = Label_data(0, {"yes": 0, "no": 0})
+        subset = CreateDataSubsetWithReplacement(train_examples, 2500, bank_train_labels)
+        subtree = DetermineTree(subset, bank_train_labels, 0, 16, ["age", "job", "marital", "education", "default", "balance", "housing",
+                                                                 "loan", "contact", "day", "month", "duration", "campaign", "pdays",
+                                                                 "previous", "poutcome"])
+        training_error = TestTree(subtree, train_examples)
+        test_error = TestTree(subtree, test_examples)
+        subtree_train_errors.update({id: training_error})
+        subtree_test_errors.update({id: test_error})
+        subtrees.update({id: subtree})
+        id += 1
+
+    # Compute error for training data set to create a graph from the data
+    num_trees = 1
+    tree_error = 0
+    bagged_error = 0
+    bagged_errors = []
+    tree_count = []
+    for id in subtree_train_errors:
+        tree_error += subtree_train_errors[id]
+        bagged_error = tree_error / num_trees
+        bagged_errors.append(bagged_error)
+        tree_count.append(id)
+        num_trees += 1
+
+    ## Generate graph for this new set of data using randomized feature selection
+    ## -- Need to figure out how to make multiple graphs work so the data doesn't overlap because the 2, 4, 6 need to be separate figures
+    pyp.plot(tree_count, bagged_errors, label = "Average Error for training set examples")
+
+    num_trees = 1
+    tree_error = 0
+    bagged_error = 0
+    bagged_errors = []
+    tree_count = []
+    for id in subtree_test_errors:
+        tree_error += subtree_test_errors[id]
+        bagged_error = tree_error / num_trees
+        bagged_errors.append(bagged_error)
+        tree_count.append(id) 
+        num_trees += 1
+
+    ## generate graph with this bagged tree data
+    pyp.plot(tree_count, bagged_errors, label = "Average Error for test set examples")
+    pyp.xlabel("Number of trees in bag")
+    pyp.ylabel("Average Prediction Error Rate")
+    pyp.title("Forest Prediction Error Averages for Training and Test Data using subsets of size 2") # Placeholder, hopefully I'll come up with something better later
+    pyp.legend()
+    pyp.draw()
+
+    # Save created plot for access and transfer later. (pretty sure results in Latex document will be whatever I most recently calculated
+    pyp.savefig('bagged_train_test_avg_errors.png')
+
+    ## Repeat, but for random subsets of size 4
+    RANDOM_LIMIT = 4
 
 
 

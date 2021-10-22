@@ -525,7 +525,7 @@ def main():
                     var += (1 - num_yes/len(example_predictions))**2
                 else:
                     var += (0 - num_yes/len(example_predictions))**2
-            var = var / (example_predictions - 1)
+            var = var / (len(example_predictions) - 1)
             test_example_bias.update({ex: bias})
             test_example_var.update({ex: var})
             if ex % 500 == 0:
@@ -553,7 +553,7 @@ def main():
                 bag = bags[b]
                 for t in bag:
                     tree = bag[t]
-                    pred = TestTree(tree, example)
+                    pred = TestExample(tree, example)
                     if pred == "yes":
                         num_yes += 1
                     example_predictions.append(pred)
@@ -568,7 +568,7 @@ def main():
                     var += (1 - num_yes/len(example_predictions))**2
                 else:
                     var += (0 - num_yes/len(example_predictions))**2
-            var = var / (example_predictions - 1)
+            var = var / (len(example_predictions) - 1)
             test_example_bias.update({ex: bias})
             test_example_var.update({ex: var})
             if ex % 500 == 0:

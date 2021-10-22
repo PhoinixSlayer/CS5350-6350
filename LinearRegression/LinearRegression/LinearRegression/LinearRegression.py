@@ -104,14 +104,23 @@ def BatchGradientDecent(train_examples, test_examples):
 
 ## 
 def StochasticGradientDecent(train_examples, test_examples):
+    loss_at_stage = []
+    stage_iteration = []
     current_weight = [0,0,0,0,0,0,0,0]
     current_rate = 1
+    prev_rate = current_rate
+    stage = 0
 
     rand_order = select(range(1, len(train_examples)), len(train_examples))
 
     for e in rand_order:
         example = train_examples[e]
+        cost = Loss(current_weight, train_examples)
+        loss_at_stage.append(cost)
+        stage_iteration.append(stage)
+        stage += 1
 
+        new_weight = []
 
     print("Todo")
 

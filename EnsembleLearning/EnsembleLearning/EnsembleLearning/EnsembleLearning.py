@@ -327,8 +327,9 @@ def TransformNumericals(examples, test_set):
 def CreateSubsetWithoutReplacement(train_examples):
     new_sub_set = {}
     random_set = r.sample(range(1, len(train_examples)), 1000)
+    new_id = 1
     for i in random_set:
-        new_sub_set.update({i: train_examples[i]})
+        new_sub_set.update({new_id: train_examples[i]})
     return new_sub_set
 
 #

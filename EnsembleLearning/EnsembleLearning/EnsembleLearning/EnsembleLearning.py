@@ -484,9 +484,9 @@ def main():
             training_subset = CreateSubsetWithoutReplacement(train_examples)
             subtrees = {}
             id = 1
-            for i in range(200): # Lowered size because my code completes too slowly in this section
+            for i in range(500): # Lowered size because my code completes too slowly in this section
                 bank_train_labels = Label_data(0, {"yes": 0, "no": 0})
-                subset = CreateDataSubsetWithReplacement(training_subset, 500, bank_train_labels)
+                subset = CreateDataSubsetWithReplacement(training_subset, 1000, bank_train_labels)
                 subtree = DetermineTree(subset, bank_train_labels, 0, 16, ["age", "job", "marital", "education", "default", "balance", "housing",
                                                                  "loan", "contact", "day", "month", "duration", "campaign", "pdays",
                                                                  "previous", "poutcome"])
@@ -526,7 +526,6 @@ def main():
                 else:
                     var += (0 - num_yes/len(example_predictions))**2
             var = var / (example_predictions - 1)
-
             test_example_bias.update({ex: bias})
             test_example_var.update({ex: var})
             if ex % 500 == 0:
@@ -601,7 +600,7 @@ def main():
         id = 1
         for i in range(500):
             bank_train_labels = Label_data(0, {"yes": 0, "no": 0})
-            subset = CreateDataSubsetWithReplacement(train_examples, 2500, bank_train_labels)
+            subset = CreateDataSubsetWithReplacement(train_examples, 5000, bank_train_labels)
             subtree = DetermineTree(subset, bank_train_labels, 0, 16, ["age", "job", "marital", "education", "default", "balance", "housing",
                                                                  "loan", "contact", "day", "month", "duration", "campaign", "pdays",
                                                                  "previous", "poutcome"])
@@ -658,7 +657,7 @@ def main():
         id = 1
         for i in range(500):
             bank_train_labels = Label_data(0, {"yes": 0, "no": 0})
-            subset = CreateDataSubsetWithReplacement(train_examples, 2500, bank_train_labels)
+            subset = CreateDataSubsetWithReplacement(train_examples, 5000, bank_train_labels)
             subtree = DetermineTree(subset, bank_train_labels, 0, 16, ["age", "job", "marital", "education", "default", "balance", "housing",
                                                                  "loan", "contact", "day", "month", "duration", "campaign", "pdays",
                                                                  "previous", "poutcome"])
@@ -713,7 +712,7 @@ def main():
         id = 1
         for i in range(500):
             bank_train_labels = Label_data(0, {"yes": 0, "no": 0})
-            subset = CreateDataSubsetWithReplacement(train_examples, 2500, bank_train_labels)
+            subset = CreateDataSubsetWithReplacement(train_examples, 5000, bank_train_labels)
             subtree = DetermineTree(subset, bank_train_labels, 0, 16, ["age", "job", "marital", "education", "default", "balance", "housing",
                                                                  "loan", "contact", "day", "month", "duration", "campaign", "pdays",
                                                                  "previous", "poutcome"])

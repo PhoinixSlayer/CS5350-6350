@@ -406,7 +406,7 @@ def main():
             id += 1
 
     TransformNumericals(train_examples, test_examples)
-
+    input = ""
 
     ### AdaBoost Code
 

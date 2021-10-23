@@ -413,9 +413,9 @@ def main():
 
 
     #####################################################################################################################################
-    #input = "2b"
+    input = "2b"
     if input == "2b":
-        print("value of input: " + input)
+        print("Running code for bagged trees needed in part 2b.")
         ### Bagging implementation
         subtrees = {}
         subtree_train_errors = {}
@@ -475,7 +475,7 @@ def main():
     ##################################################################################################################################
     input = "2c"
     if input == "2c":
-        print("value of input: " + input)
+        print("Running code for bias, variance, and general squared error values needed in part 2c.")
         ### Repeat the above, but 100 times on a training set 1/5th the size of what is given
         bags = {}
         training_subset = {}
@@ -484,7 +484,7 @@ def main():
             training_subset = CreateSubsetWithoutReplacement(train_examples)
             subtrees = {}
             id = 1
-            for i in range(500): # Lowered size because my code completes too slowly in this section
+            for i in range(500):
                 bank_train_labels = Label_data(0, {"yes": 0, "no": 0})
                 subset = CreateDataSubsetWithReplacement(training_subset, 1000, bank_train_labels)
                 subtree = DetermineTree(subset, bank_train_labels, 0, 16, ["age", "job", "marital", "education", "default", "balance", "housing",
@@ -528,8 +528,8 @@ def main():
             var = var / (len(example_predictions) - 1)
             test_example_bias.update({ex: bias})
             test_example_var.update({ex: var})
-            if ex % 500 == 0:
-                print("Completed the bias and var calculations for the " + str(ex) + "th test example")
+            #if ex % 500 == 0:
+            #    print("Completed the bias and var calculations for the " + str(ex) + "th test example")
         bias_avg = 0
         var_avg = 0
         for ex in test_example_bias:
@@ -571,8 +571,8 @@ def main():
             var = var / (len(example_predictions) - 1)
             test_example_bias.update({ex: bias})
             test_example_var.update({ex: var})
-            if ex % 500 == 0:
-                print("Completed the bias and var calculations for the " + str(ex) + "th test example.")
+            #if ex % 500 == 0:
+            #    print("Completed the bias and var calculations for the " + str(ex) + "th test example.")
 
         bias_avg = 0
         var_avg = 0
@@ -589,7 +589,7 @@ def main():
     ####################################################################################################################################
     input = "2d"
     if input == "2d":
-        print("value for input " + input)
+        print("Running code for bagged forests in part 2d.")
         ### Code for Bagged Forests section.
         DOING_FORESTS = True
         RANDOM_LIMIT = 2

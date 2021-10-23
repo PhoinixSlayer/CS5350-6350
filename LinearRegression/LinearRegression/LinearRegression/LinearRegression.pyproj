@@ -23,6 +23,14 @@
   <ItemGroup>
     <Compile Include="LinearRegression.py" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="concrete\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="concrete\data-desc.txt" />
+    <Content Include="concrete\test.csv" />
+    <Content Include="concrete\train.csv" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
        Visual Studio and specify your pre- and post-build commands in

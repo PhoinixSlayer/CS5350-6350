@@ -18,9 +18,12 @@ class Example:
 # Calculate the cost for a specific examples mistake
 def Cost(weight_vector, example):
     vector_mult = 0
+    index = 0
     for f in example.attributes:
-        vector_mult += example.attributes[f] * weight_vector[f]
-    cost = example.slump - vector_mult
+        vector_mult += float(f) * weight_vector[index]
+        index += 1
+    cost = float(example.y) - vector_mult
+    return cost
 
 # Calculate the total Cost (or Loss) for the passed in weight vector using the data
 def Loss(weight_vector, examples):
@@ -34,7 +37,7 @@ def Loss(weight_vector, examples):
 # Calculates the gradient for the given part of J()'s derivative xi using the passed in weight and example
 def GradientPart(weight_vector, example, xi):
     cost_ex = Cost(weight_vector, example)
-    return (cost_ex * xi)
+    return (cost_ex * float(xi))
 
 # Returns total gradient for the weight vector as a new vector.
 def Gradient(curr_weight, examples):
@@ -59,11 +62,12 @@ def BatchGradientDecent(train_examples, test_examples):
     #  final weight vector using the test data.
     norm_difference = 1
     current_weight = [0, 0, 0, 0, 0, 0, 0, 0]
-    current_rate = 1
+    initial_rate = 0.014
+    current_rate = 0.014
     prev_rate = current_rate
     stage = 0
     
-    while norm_difference > 10**(-6):
+    while norm_difference > (1 / 10**6):
         curr_loss = Loss(current_weight, train_examples)
         losses_on_training.append(curr_loss)
         stage_iteration.append(stage)
@@ -80,26 +84,26 @@ def BatchGradientDecent(train_examples, test_examples):
         sum = 0
         for i in range(len(current_weight)):
             sum += new_weight[i] - current_weight[i]
-        norm_difference = sum
+        norm_difference = abs(sum)
         current_weight = new_weight
-        stage = 1
+        stage += 1
 
     # When the above stops because the convergence is low enough, use the current weight vector (because it was set to the new - and
     #  thus final - weight vector as that was the one that brought the convergence low enough.
-    print("The final weight vector is: ", current_weight)
-    print("And the learning rate that was previously used to create it is: " + str(prev_rate))
-
-    # Now use the stored total costs (or loss) of the training data at each step
-    pyp.plot(stage_iteration, losses_for_training, label = "Cost for Training Data at each stage")
-    pyp.xlabel("Current stage")
-    pyp.ylabel("Loss on Training Set")
-    pyp.title("Depiction of the Loss for the Weight Vector on the Training Set")
-    pyp.legend()
-    pyp.show()
+    print("The final weight vector for Batch Gradient Decent is: ", current_weight)
+    print("And the initial learning rate the algorithm started with was: r = " + str(initial_rate))
 
     # -- We don't have the final weight vector's loss yet, so calculate it here --
     test_loss = Loss(current_weight, test_examples)
     print("The total cost for the Test set using the final weight vector is: " + str(test_loss))
+
+    # Now use the stored total costs (or loss) of the training data at each step
+    pyp.plot(stage_iteration, losses_on_training, label = "Cost for Training Data at each stage")
+    pyp.xlabel("Current stage")
+    pyp.ylabel("Loss on Training Set")
+    pyp.title("Total Cost (Loss) for Weight Vector on Training Set using Batch")
+    pyp.legend()
+    pyp.show()
 
 
 ## 
@@ -107,22 +111,52 @@ def StochasticGradientDecent(train_examples, test_examples):
     loss_at_stage = []
     stage_iteration = []
     current_weight = [0,0,0,0,0,0,0,0]
-    current_rate = 1
+    current_rate = 0.0135
+    initial_rate = current_rate
     prev_rate = current_rate
     stage = 0
 
-    rand_order = select(range(1, len(train_examples)), len(train_examples))
+    rand_order = r.sample(range(1, len(train_examples)+1), len(train_examples))
 
     for e in rand_order:
         example = train_examples[e]
-        cost = Loss(current_weight, train_examples)
+
+        new_weight = []
+        gradient = []
+        for i in range(8):
+            gradient.append( (current_rate * GradientPart(current_weight, example, example.attributes[i])) )
+
+        for i in range(8):
+            new_weight.append( current_weight[i] + gradient[i] )
+
+        cost = Loss(new_weight, train_examples)
         loss_at_stage.append(cost)
         stage_iteration.append(stage)
         stage += 1
 
-        new_weight = []
+        current_weight = new_weight
 
-    print("Todo")
+        prev_rate = current_rate
+        current_rate = current_rate / 2
+
+
+    # When the above stops because the convergence is low enough, use the current weight vector (because it was set to the new - and
+    #  thus final - weight vector as that was the one that brought the convergence low enough.
+    print("The final weight vector using Stochastic Gradient Decent is: ", current_weight)
+    print("And the initial learning rate that the algorithm started with was: r = " + str(initial_rate))
+
+    # -- We don't have the final weight vector's loss yet, so calculate it here --
+    test_loss = Loss(current_weight, test_examples)
+    print("The total cost for the Test set using the final weight vector is: " + str(test_loss))
+
+    # Now use the stored total costs (or loss) of the training data at each step
+    pyp.plot(stage_iteration, loss_at_stage, label = "Cost for Training Data at each stage")
+    pyp.xlabel("Current stage")
+    pyp.ylabel("Loss on Training Set")
+    pyp.title("Total Cost (Loss) for Weight Vector on Training Set using Stochastic")
+    pyp.legend()
+    pyp.show()
+
 
 
 ##

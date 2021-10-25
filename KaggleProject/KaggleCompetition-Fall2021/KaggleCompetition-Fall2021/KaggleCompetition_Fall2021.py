@@ -1,5 +1,7 @@
 # Main file for Ensemble Learning homework portion.
 
+import csv
+
 import random as r
 import math as m
 import pandas as pd
@@ -488,6 +490,16 @@ def main():
         prediction.update({example.example_number: tpr})
 
     ## With the predictions made, output to a .csv file for submission.
+    with open("KaggleData/predictions.csv", 'w', newline='') as f:
+        writer = csv.writer(f)
+        header = ["ID", "Prediction"]
+        writer.writerow(header)
+        for id in prediction:
+            pred = prediction[id]
+            line = [str(id), str(pred)]
+            writer.writerow(line)
+
+    print("File for submission has been completed.")
 
 
 # Run program

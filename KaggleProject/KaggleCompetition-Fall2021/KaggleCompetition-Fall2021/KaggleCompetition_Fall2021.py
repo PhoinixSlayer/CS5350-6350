@@ -468,6 +468,8 @@ def main():
         #subtree_train_errors.update({id: training_error})
         #subtree_test_errors.update({id: test_error})
         subtrees.update({id: subtree})
+        if id % 25 == 0:
+            print("Finished the " + str(id) + "th tree")
         id += 1
 
 

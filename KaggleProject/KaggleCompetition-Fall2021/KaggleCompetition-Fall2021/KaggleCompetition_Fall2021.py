@@ -438,8 +438,8 @@ def main():
                 temp = Example(int(terms[0]), attributes, None)
                 test_examples.update({int(terms[0]): temp})
                 # Not sure if I'll need these yet
-                test_labels.total_num_values += 1
-                test_labels.label_values_and_counts[temp.label] += 1
+                #test_labels.total_num_values += 1
+                #test_labels.label_values_and_counts[temp.label] += 1
                 #id += 1
             else:
                 test_first = False
@@ -460,7 +460,7 @@ def main():
     for i in range(500):
         train_labels = Label_data(0, {"1": 0, "0": 0})
         subset = CreateDataSubsetWithReplacement(train_examples, 25000, train_labels)
-        subtree = DetermineTree(subset, bank_train_labels, 0, 14, ["age", "workclass", "fnlwgt", "education", "education-num", "marital-status",
+        subtree = DetermineTree(subset, train_labels, 0, 14, ["age", "workclass", "fnlwgt", "education", "education-num", "marital-status",
                                                                   "occupation", "relationship", "race", "sex", "capital-gain", "capital-loss", 
                                                                   "hours-per-week", "native-country"])
         #training_error = TestTree(subtree, train_examples)

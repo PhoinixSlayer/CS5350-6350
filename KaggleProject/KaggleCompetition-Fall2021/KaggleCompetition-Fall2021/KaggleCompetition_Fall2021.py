@@ -459,14 +459,10 @@ def main():
     id = 1
     for i in range(500):
         train_labels = Label_data(0, {"1": 0, "0": 0})
-        subset = CreateDataSubsetWithReplacement(train_examples, 25000, train_labels)
+        subset = CreateDataSubsetWithReplacement(train_examples, 12500, train_labels) #Decreasing total because running out of time
         subtree = DetermineTree(subset, train_labels, 0, 14, ["age", "workclass", "fnlwgt", "education", "education-num", "marital-status",
                                                                   "occupation", "relationship", "race", "sex", "capital-gain", "capital-loss", 
                                                                   "hours-per-week", "native-country"])
-        #training_error = TestTree(subtree, train_examples)
-        #test_error = TestTree(subtree, test_examples)
-        #subtree_train_errors.update({id: training_error})
-        #subtree_test_errors.update({id: test_error})
         subtrees.update({id: subtree})
         if id % 25 == 0:
             print("Finished the " + str(id) + "th tree")
@@ -481,15 +477,17 @@ def main():
         examples_predictions = []
         for t in subtrees:
             tree = subtrees[t]
-            prediction = TestExample(tree, example)
-            examples_predictions.append(prediction)
+            pred = TestExample(tree, example)
+            examples_predictions.append(pred)
         # With all the predictions for this example, find the values for both rates, as I think they are both needed for AUROC.
         tpr = TruePositiveRate(examples_predictions)
-        fpr = FalsePositiveRate(examples_predictions)
+        #fpr = FalsePositiveRate(examples_predictions) #Not sure if even using this yet
 
         # Do I just use the one that is higher as the report? I feel like I should always be using the TPR, but maybe I should just
         # Report the average? If the average is '1' should I have the prediction be 1.0? Or should I always report the TPR, regardless?
         prediction.update({example.example_number: tpr})
+        if example.example_number % 500 == 0:
+            print("Completed " + str(example.example_number) + "th example calculations")
 
     ## With the predictions made, output to a .csv file for submission.
     with open("KaggleData/predictions.csv", 'w', newline='') as f:

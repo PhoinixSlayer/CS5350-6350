@@ -340,6 +340,33 @@ def CreateDataSubsetWithReplacement(train_examples, desired_size, bank_labels):
     return new_sub_set
 
 
+########################################################################################################################################
+# Also referred to as Recall
+def TruePositiveRate(predictions):
+    positives = 0
+    negatives = 0
+    rate = 0
+    for pred in predictions:
+        if pred == "1":
+            positives += 1
+        if pred == "0":
+            negatives += 1
+    rate = positives / (positives + negatives)
+    return rate
+
+def FalsePositiveRate(predictions):
+    positives = 0
+    negatives = 0
+    rate = 0
+    for pred in predictions:
+        if pred == "1":
+            positives += 1
+        if pred == "0":
+            negatives += 1
+    rate = 1 - (negatives / (positives + negatives))
+    return rate
+
+
 
 # Global variables for the forests problem
 DOING_FORESTS = False
@@ -383,7 +410,7 @@ def main():
     train_first = True
     test_first = True
     id = 1
-    with open ( "/train.csv" , 'r' ) as f: 
+    with open ( "KaggleData/train_final.csv" , 'r' ) as f: 
         for l in f:
             if train_first != True:
                 terms = l.strip().split(',')
@@ -399,7 +426,7 @@ def main():
                 train_first = False
             
     #id = 1
-    with open( "/test.csv", 'r') as f:
+    with open( "KaggleData/test_final.csv", 'r') as f:
         for l in f:
             if test_first != True:
                 terms = l.strip().split(',')
@@ -434,10 +461,34 @@ def main():
         subtree = DetermineTree(subset, bank_train_labels, 0, 14, ["age", "workclass", "fnlwgt", "education", "education-num", "marital-status",
                                                                   "occupation", "relationship", "race", "sex", "capital-gain", "capital-loss", 
                                                                   "hours-per-week", "native-country"])
-        training_error = TestTree(subtree, train_examples)
-        test_error = TestTree(subtree, test_examples)
+        #training_error = TestTree(subtree, train_examples)
+        #test_error = TestTree(subtree, test_examples)
         #subtree_train_errors.update({id: training_error})
         #subtree_test_errors.update({id: test_error})
         subtrees.update({id: subtree})
         id += 1
 
+
+    # In order to get the needed prediction, I think I need to predict on a example using each of the trees, then for that example
+    #  compute the true positive rate or false positive rate depending on what the average prediction for that example is.
+    prediction = {}
+    for ex in test_examples:
+        example = test_examples[ex]
+        examples_predictions = []
+        for t in subtrees:
+            tree = subtrees[t]
+            prediction = TestExample(tree, example)
+            examples_predictions.append(prediction)
+        # With all the predictions for this example, find the values for both rates, as I think they are both needed for AUROC.
+        tpr = TruePositiveRate(examples_predictions)
+        fpr = FalsePositiveRate(examples_predictions)
+
+        # Do I just use the one that is higher as the report? I feel like I should always be using the TPR, but maybe I should just
+        # Report the average? If the average is '1' should I have the prediction be 1.0? Or should I always report the TPR, regardless?
+        prediction.update({example.example_number: tpr})
+
+    ## With the predictions made, output to a .csv file for submission.
+
+
+# Run program
+main()

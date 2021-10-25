@@ -23,6 +23,13 @@
   <ItemGroup>
     <Compile Include="KaggleCompetition_Fall2021.py" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="KaggleData\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="KaggleData\test_final.csv" />
+    <Content Include="KaggleData\train_final.csv" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
        Visual Studio and specify your pre- and post-build commands in

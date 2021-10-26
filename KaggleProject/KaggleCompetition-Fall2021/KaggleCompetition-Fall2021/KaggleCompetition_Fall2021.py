@@ -446,60 +446,104 @@ def main():
 
     TransformNumericals(train_examples, test_examples)
 
-    ## Basic implementation plan, I will implement the AdaBoost and Bagging implementation from the homework here, and then figure out how
-    ##  to compress the data I got into a prediction value for each example, then output that into a .csv 'Excel' file
 
-    ### AdaBoost section
+    ### Forests Section
+    part = "2"
+    if part == "2":
+        DOING_FORESTS = True
+        RANDOM_LIMIT = 6
+
+        subtrees = {}
+        id = 1
+        for i in range(500):
+            train_labels = Label_data(0, {"1": 0, "0": 0})
+            subset = CreateDataSubsetWithReplacement(train_examples, 15000, train_labels) #Decreasing total because running out of time
+            subtree = DetermineTree(subset, train_labels, 0, 14, ["age", "workclass", "fnlwgt", "education", "education-num", "marital-status",
+                                                                  "occupation", "relationship", "race", "sex", "capital-gain", "capital-loss", 
+                                                                  "hours-per-week", "native-country"])
+            subtrees.update({id: subtree})
+            if id % 25 == 0:
+                print("Finished the " + str(id) + "th tree")
+            id += 1
+
+
+        # In order to get the needed prediction, I think I need to predict on a example using each of the trees, then for that example
+        #  compute the true positive rate or false positive rate depending on what the average prediction for that example is.
+        prediction = {}
+        for ex in test_examples:
+            example = test_examples[ex]
+            examples_predictions = []
+            for t in subtrees:
+                tree = subtrees[t]
+                pred = TestExample(tree, example)
+                examples_predictions.append(pred)
+            # With all the predictions for this example, find the values for both rates, as I think they are both needed for AUROC.
+            tpr = TruePositiveRate(examples_predictions)
+            #fpr = FalsePositiveRate(examples_predictions) #Not sure if even using this yet
+
+            prediction.update({example.example_number: tpr})
+            if example.example_number % 500 == 0:
+                print("Completed " + str(example.example_number) + "th example calculations")
+
+        # Code for turning prediction output into a .csv file for submission
+        with open("KaggleData/predictions.csv", 'w', newline='') as f:
+            writer = csv.writer(f)
+            header = ["ID", "Prediction"]
+            writer.writerow(header)
+            for id in prediction:
+                pred = prediction[id]
+                line = [str(id), str(pred)]
+                writer.writerow(line)
+
+        print("File for submission has been completed.")
 
 
     ### Bagging section
-    subtrees = {}
-    #subtree_train_errors = {}
-    #subtree_test_errors = {}
-    id = 1
-    for i in range(500):
-        train_labels = Label_data(0, {"1": 0, "0": 0})
-        subset = CreateDataSubsetWithReplacement(train_examples, 12500, train_labels) #Decreasing total because running out of time
-        subtree = DetermineTree(subset, train_labels, 0, 14, ["age", "workclass", "fnlwgt", "education", "education-num", "marital-status",
+    #part = "1"  # Need to test other section, don't run this part when doing so
+    if part == "1":
+        subtrees = {}
+        id = 1
+        for i in range(500):
+            train_labels = Label_data(0, {"1": 0, "0": 0})
+            subset = CreateDataSubsetWithReplacement(train_examples, 15000, train_labels) #Decreasing total because running out of time
+            subtree = DetermineTree(subset, train_labels, 0, 14, ["age", "workclass", "fnlwgt", "education", "education-num", "marital-status",
                                                                   "occupation", "relationship", "race", "sex", "capital-gain", "capital-loss", 
                                                                   "hours-per-week", "native-country"])
-        subtrees.update({id: subtree})
-        if id % 25 == 0:
-            print("Finished the " + str(id) + "th tree")
-        id += 1
+            subtrees.update({id: subtree})
+            if id % 25 == 0:
+                print("Finished the " + str(id) + "th tree")
+            id += 1
 
 
-    # In order to get the needed prediction, I think I need to predict on a example using each of the trees, then for that example
-    #  compute the true positive rate or false positive rate depending on what the average prediction for that example is.
-    prediction = {}
-    for ex in test_examples:
-        example = test_examples[ex]
-        examples_predictions = []
-        for t in subtrees:
-            tree = subtrees[t]
-            pred = TestExample(tree, example)
-            examples_predictions.append(pred)
-        # With all the predictions for this example, find the values for both rates, as I think they are both needed for AUROC.
-        tpr = TruePositiveRate(examples_predictions)
-        #fpr = FalsePositiveRate(examples_predictions) #Not sure if even using this yet
+        # In order to get the needed prediction, I think I need to predict on a example using each of the trees, then for that example
+        #  compute the true positive rate or false positive rate depending on what the average prediction for that example is.
+        prediction = {}
+        for ex in test_examples:
+            example = test_examples[ex]
+            examples_predictions = []
+            for t in subtrees:
+                tree = subtrees[t]
+                pred = TestExample(tree, example)
+                examples_predictions.append(pred)
+            # With all the predictions for this example, find the values for both rates, as I think they are both needed for AUROC.
+            tpr = TruePositiveRate(examples_predictions)
+            #fpr = FalsePositiveRate(examples_predictions) #Not sure if even using this yet
 
-        # Do I just use the one that is higher as the report? I feel like I should always be using the TPR, but maybe I should just
-        # Report the average? If the average is '1' should I have the prediction be 1.0? Or should I always report the TPR, regardless?
-        prediction.update({example.example_number: tpr})
-        if example.example_number % 500 == 0:
-            print("Completed " + str(example.example_number) + "th example calculations")
+            prediction.update({example.example_number: tpr})
+            if example.example_number % 500 == 0:
+                print("Completed " + str(example.example_number) + "th example calculations")
 
-    ## With the predictions made, output to a .csv file for submission.
-    with open("KaggleData/predictions.csv", 'w', newline='') as f:
-        writer = csv.writer(f)
-        header = ["ID", "Prediction"]
-        writer.writerow(header)
-        for id in prediction:
-            pred = prediction[id]
-            line = [str(id), str(pred)]
-            writer.writerow(line)
+        ## With the predictions made, output to a .csv file for submission.
+        with open("KaggleData/predictions.csv", 'w', newline='') as f:
+            writer = csv.writer(f)
+            header = ["ID", "Prediction"]
+            writer.writerow(header)
+            for id in prediction:
+                pred = prediction[id]
+                line = [str(id), str(pred)]
+                writer.writerow(line)
 
-    print("File for submission has been completed.")
+        print("File for submission has been completed.")
 
 
 # Run program

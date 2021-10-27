@@ -457,7 +457,7 @@ def main():
         id = 1
         for i in range(500):
             train_labels = Label_data(0, {"1": 0, "0": 0})
-            subset = CreateDataSubsetWithReplacement(train_examples, 15000, train_labels) #Decreasing total because running out of time
+            subset = CreateDataSubsetWithReplacement(train_examples, 17500, train_labels) #Decreasing total because running out of time
             subtree = DetermineTree(subset, train_labels, 0, 14, ["age", "workclass", "fnlwgt", "education", "education-num", "marital-status",
                                                                   "occupation", "relationship", "race", "sex", "capital-gain", "capital-loss", 
                                                                   "hours-per-week", "native-country"])

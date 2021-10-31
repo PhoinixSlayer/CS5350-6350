@@ -116,7 +116,6 @@ def VotedPerceptron(training, test, T):
             else:
                 stage_count[mm] += 1
         rate = rate * 0.01
-        #epoch_weight.append( weight )
 
     # Do similar calculations like before, determining if it correctly predicts a test examples label
     correct = 0
@@ -192,7 +191,6 @@ def AveragePerceptron(training, test, T):
             for i in range(len(averaged_weight)):
                 averaged_weight[i] += weight[i]
         rate = rate * 0.01
-        #epoch_weight.append( weight )
 
     correct = 0
     incorrect = 0
@@ -200,12 +198,6 @@ def AveragePerceptron(training, test, T):
         example = test[ex]
         total = 0
         pred = Predict(averaged_weight, example)
-        #for i in range(len(stage_weight)):
-         #   w = stage_weight[i]
-          #  c = stage_count[i]
-           # pred = Predict(w, example)
-            #total += c * pred
-        # After summing all weights, the sign of the total is the prediction for the test example
         final_prediction = 0
         if pred >= 0:
             final_prediction = 1

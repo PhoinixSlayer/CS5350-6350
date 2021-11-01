@@ -68,13 +68,13 @@ def StandardPerceptron(training, test_examples, T):
     for ex in test_examples:
         example = test_examples[ex]
         prediction = Predict(weight, example)
-        if prediction >= 0:
-            if example.label > 0:
+        if prediction > 0:
+            if example.label == 1:
                 correct += 1
             else:
                 incorrect += 1
         else:
-            if example.label < 0:
+            if example.label == 0:
                 correct += 1
             else:
                 incorrect += 1
@@ -98,9 +98,9 @@ def VotedPerceptron(training, test, T):
     stage_count.append(0)
 
     for i in range(T):
-        #shuffled_order = r.sample( range(1, len(training)+1), len(training))
+        shuffled_order = r.sample( range(1, len(training)+1), len(training))
         currently_correct = 0
-        for ex in training:
+        for ex in shuffled_order:
             example = training[ex]
             result = VectorMult(weight, example)
             if result <= 0:
@@ -135,10 +135,10 @@ def VotedPerceptron(training, test, T):
             total += c * sign
         # After summing all weights, the sign of the total is the prediction for the test example
         final_prediction = 0
-        if total >= 0:
+        if total > 0:
             final_prediction = 1
         else:
-            final_prediction = -1
+            final_prediction = 0
 
         # With the sign of the total prediction complete, we can then determine if, on average, the voted perceptron correctly predicted 
         #  this examples label.
@@ -149,7 +149,7 @@ def VotedPerceptron(training, test, T):
 
     error = incorrect / (incorrect + correct)
 
-    print("The average prediction error is: " + str(error))
+    print("The average prediction error for Voted Perceptron is: " + str(error))
     print("The total number of learned weight vectors is (including the initial w=0 vector): " + str(len(stage_weight)))
     # the above value uses all vectors, not just the unique ones
 
@@ -170,9 +170,9 @@ def AveragePerceptron(training, test, T):
     stage_count.append(0)
 
     for i in range(T):
-        #shuffled_order = r.sample( range(1, len(training)+1), len(training))
+        shuffled_order = r.sample( range(1, len(training)+1), len(training))
         currently_correct = 0
-        for ex in training:
+        for ex in shuffled_order:
             example = training[ex]
             result = VectorMult(weight, example)
             if result <= 0:
@@ -199,10 +199,10 @@ def AveragePerceptron(training, test, T):
         total = 0
         pred = Predict(averaged_weight, example)
         final_prediction = 0
-        if pred >= 0:
+        if pred > 0:
             final_prediction = 1
         else:
-            final_prediction = -1
+            final_prediction = 0
 
         # With the sign of the total prediction complete, we can then determine if, on average, the voted perceptron correctly predicted 
         #  this examples label.

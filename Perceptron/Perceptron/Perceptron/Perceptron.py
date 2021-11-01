@@ -56,7 +56,8 @@ def StandardPerceptron(training, test_examples, T):
             result = VectorMult(weight, example)
             if result <= 0:
                 weight = UpdateWeight(weight, example, rate)
-        rate = rate * 0.1
+                #rate = rate * 0.9
+        rate = rate * 0.01
         # I need to store the fully updated weight vector, but I don't know if I should do that for each epoch or have a single weight
         #  vector that is updated throughout each epoch process, and aftger all the epochs are finished, save that one instead.
         #epoch.append( weight )
@@ -81,8 +82,40 @@ def StandardPerceptron(training, test_examples, T):
 
     error_average = incorrect / (correct + incorrect)
 
-    print("The learned weight vector using T = 10 is: ", weight)
+    print("The learned weight vector for Standard Perceptron is: ", weight)
     print("And the average error for this weight when used to predict the test data is: " + str(error_average))
+
+
+
+
+def Compare(curr, next):
+    for i in range(len(curr)):
+        if curr[i] == next[i]:
+            continue
+        else:
+            return False
+    return True
+
+
+def DetermineUniques(stages, counts, unique_weights, unique_counts):
+    stage_used = []
+    for i in range(len(stages)):
+        stage_used.append(False)
+    ii = 0
+    for i in range(len(stages)):
+        if stage_used[i] == False:
+            unique_weights.append(stages[i])
+            unique_counts.append(counts[i])
+            stage_used[i] = True
+
+            current = stages[i]
+            if i + 1 < len(stages):
+                for j in range(i+1, len(stages)):
+                    next_w = stages[j]
+                    if Compare(current, next_w):
+                        unique_counts[ii] += counts[j]
+                        stage_used[j] = True
+            ii += 1
 
 
 ###
@@ -112,10 +145,16 @@ def VotedPerceptron(training, test, T):
 
                 stage_count[mm] += 1
 
-                #rate = rate * 0.8
+                #rate = rate * 0.9
             else:
                 stage_count[mm] += 1
         rate = rate * 0.01
+
+    # Find the unique weight vectors here
+    unique_weights = []
+    unique_counts = []
+    DetermineUniques(stage_weight, stage_count, unique_weights, unique_counts)
+
 
     # Do similar calculations like before, determining if it correctly predicts a test examples label
     correct = 0
@@ -149,12 +188,15 @@ def VotedPerceptron(training, test, T):
 
     error = incorrect / (incorrect + correct)
 
+    print("The distinct weight vectors and their respective counts in Voted Perceptron are as follows.")
+    print("The number of total weights is: " + str(len(stage_weight)))
+    print("The number of unique weights is: " + str(len(unique_weights)))
+    for i in range(len(unique_weights)):
+        print(unique_weights[i], ", count: " + str(unique_counts[i]))
     print("The average prediction error for Voted Perceptron is: " + str(error))
-    print("The total number of learned weight vectors is (including the initial w=0 vector): " + str(len(stage_weight)))
     # the above value uses all vectors, not just the unique ones
 
-    ## In the future I will need to think of a way to list all of the unique learned vectors, and each ones respective correctly predicted count
-
+    
 
 ###
 def AveragePerceptron(training, test, T):
@@ -184,7 +226,7 @@ def AveragePerceptron(training, test, T):
 
                 stage_count[mm] += 1
 
-                #rate = rate * 0.8
+                #rate = rate * 0.9
             else:
                 stage_count[mm] += 1
 
@@ -213,6 +255,7 @@ def AveragePerceptron(training, test, T):
 
     error = incorrect / (incorrect + correct)
     
+    print("The learned weight vector for Average Perceptron is: ", averaged_weight)
     print("The average prediction error for Average Perceptron is: " + str(error))
     #print("The total number of learned weight vectors is (including the initial w=0 vector): " + str(len(stage_weight)))
 
@@ -250,8 +293,7 @@ def main():
     AveragePerceptron(train_examples, test_examples, T)
     
     ### Not sure how I'll do it yet, but need to gather the average prediction error for each of the three and then compare them.
-    print("Dummy")
-    # Compare the average prediction errors for each of the methods above
+    
 
 
 ### Run Program ###

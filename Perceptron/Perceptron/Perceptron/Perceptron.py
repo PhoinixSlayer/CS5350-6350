@@ -48,7 +48,7 @@ def StandardPerceptron(training, test_examples, T):
     weight = [0,0,0,0,0] # not sure if I should have one for each epoch or just one total throughout the whole process
     rate = 1
     R = m.sqrt( (1 + len(training)) )
-
+    
     for i in range(T):
         shuffled_order = r.sample( range(1, len(training)+1), len(training))
         for ex in shuffled_order:
@@ -56,11 +56,7 @@ def StandardPerceptron(training, test_examples, T):
             result = VectorMult(weight, example)
             if result <= 0:
                 weight = UpdateWeight(weight, example, rate)
-                #rate = rate * 0.9
-        rate = rate * 0.01
-        # I need to store the fully updated weight vector, but I don't know if I should do that for each epoch or have a single weight
-        #  vector that is updated throughout each epoch process, and aftger all the epochs are finished, save that one instead.
-        #epoch.append( weight )
+                rate = rate * 0.9
 
     # After process completes, we have the learned weight vector, all we need to do now is use it to predict each test example and report
     #  the average error for the learned weight vector.
@@ -129,10 +125,9 @@ def VotedPerceptron(training, test, T):
 
     stage_weight.append(weight)
     stage_count.append(0)
-
+    
     for i in range(T):
         shuffled_order = r.sample( range(1, len(training)+1), len(training))
-        currently_correct = 0
         for ex in shuffled_order:
             example = training[ex]
             result = VectorMult(weight, example)
@@ -145,10 +140,9 @@ def VotedPerceptron(training, test, T):
 
                 stage_count[mm] += 1
 
-                #rate = rate * 0.9
+                rate = rate * 0.9
             else:
                 stage_count[mm] += 1
-        rate = rate * 0.01
 
     # Find the unique weight vectors here
     unique_weights = []
@@ -210,10 +204,9 @@ def AveragePerceptron(training, test, T):
 
     stage_weight.append(weight)
     stage_count.append(0)
-
+    
     for i in range(T):
         shuffled_order = r.sample( range(1, len(training)+1), len(training))
-        currently_correct = 0
         for ex in shuffled_order:
             example = training[ex]
             result = VectorMult(weight, example)
@@ -226,13 +219,12 @@ def AveragePerceptron(training, test, T):
 
                 stage_count[mm] += 1
 
-                #rate = rate * 0.9
+                rate = rate * 0.9
             else:
                 stage_count[mm] += 1
 
             for i in range(len(averaged_weight)):
                 averaged_weight[i] += weight[i]
-        rate = rate * 0.01
 
     correct = 0
     incorrect = 0

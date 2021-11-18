@@ -23,6 +23,14 @@
   <ItemGroup>
     <Compile Include="SVM.py" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="bank-note\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="bank-note\data-desc" />
+    <Content Include="bank-note\test.csv" />
+    <Content Include="bank-note\train.csv" />
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
        Visual Studio and specify your pre- and post-build commands in

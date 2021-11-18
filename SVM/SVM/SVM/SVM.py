@@ -65,9 +65,6 @@ def SVM_Stochastic(train, test, T):
     a = 1 ## I don't know what this is yet, really it's just a place holder.
     t = 0
 
-    vectors = []  # Will I need something like this?
-    vectors.append(w)
-
     for i in range(T):
         shuffled_order = r.sample( range(1, len(train)+1), len(train))
         for index in shuffled_order:
@@ -176,6 +173,13 @@ def SVM_Stochastic(train, test, T):
     serr2 = serr2 / len(train)
     serr3 = serr3 / len(train)
 
+    print("The error rates on the train data using Schedule 1 are: ")
+    print("For C = 100/873: " + str(error1) + ", for C = 500/873: " + str(error2) + ", for C = 700/873: " + str(error2))
+
+    print("") # Will this make a new line?
+
+    print("The error rates on the train data using Schedule 2 are: ")
+    print("For C = 100/873: " + str(serr1) + ", for C = 500/873: " + str(serr2) + ", for C = 700/873: " + str(serr3))
     ## Need to add print statements and such later so that we can see the error rates between the different C's and data sets using Sched1
 
     terr1, terr2, terr3 = 0
@@ -218,6 +222,11 @@ def SVM_Stochastic(train, test, T):
     sterr3 = sterr3 / len(test)
 
     ## Need to add print statements to do the same as above
+    print("The error rates on the test data using Schedule 1 are: ")
+    print("For C = 100/873: " + str(terr1) + ", for C = 500/873: " + str(terr2) + ", for C = 700/873: " + str(terr3))
+
+    print("The error rates on the test data using Schedule 2 are: ")
+    print("For C = 100/873: " + str(sterr1) + ", for C = 500/873: " + str(sterr2) + ", for C = 700/873: " + str(sterr3))
 
     ######  Need to add code to do the same thing, but this time with the second schedule described in the assignment
 
@@ -228,6 +237,8 @@ def DualDomain(train, test, T):
     gamma = 1
     for i in range(T):
         shuffled_order = r.sample( range(1, len(train)+1), len(train))
+
+    print("Todo")
 
 
 C = [100/873, 500/873, 700/873]

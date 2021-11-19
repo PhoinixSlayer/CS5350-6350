@@ -97,6 +97,7 @@ def SVM_Stochastic(train, test, T):
 
             t += 1 # Do this here? or after?
             curr_gamma = Schedule1(gamma, a, t)
+            a = a * 0.99
 
             #they want me to tune the original gamma and a, does this mean I decrease those separately along with the one we're using for
             # this iteration? Or do we set this to the original gamma, then update it for each example, then when we reset for the next
@@ -106,6 +107,7 @@ def SVM_Stochastic(train, test, T):
     N = len(train)
     gamma = 1  # In this algorithm this is the learning rate
     curr_gamma = 1
+    a = 1
     t = 0
     for i in range(T):
         shuffled_order = r.sample( range(1, len(train)+1), len(train))
@@ -134,6 +136,7 @@ def SVM_Stochastic(train, test, T):
 
             t += 1 # Do this here? or after?
             curr_gamma = Schedule2(gamma, t)
+            a = a * 0.5
 
 
     # With the weight vectors complete, we can now run tests with them
@@ -241,7 +244,23 @@ def SVM_Stochastic(train, test, T):
     print("The error rates on the test data using Schedule 2 are: ")
     print("For C = 100/873: " + str(sterr1) + ", for C = 500/873: " + str(sterr2) + ", for C = 700/873: " + str(sterr3))
 
-    ######  Need to add code to do the same thing, but this time with the second schedule described in the assignment
+    print("")
+
+    ######
+    print("The parameters learned using C = 100/873 are as follows;")
+    print("The parameters learned using Schedule 1 are: " + str(w1))
+    print("The parameters learned using Schedule 2 are: " + str(ww1))
+    print(" Difference in Training error is: " + str(error1-serr1) + ", and difference in test error is: " + str(terr1 - sterr1))
+
+    print("The parameters learned using C = 500/873 are as follows;")
+    print("The parameters learned using Schedule 1 are: " + str(w2))
+    print("The parameters learned using Schedule 2 are: " + str(ww2))
+    print(" Difference in Training error is: " + str(error2-serr2) + ", and difference in test error is: " + str(terr2 - sterr2))
+
+    print("The parameters learned using C = 700/873 are as follows;")
+    print("The parameters learned using Schedule 1 are: " + str(w3))
+    print("The parameters learned using Schedule 2 are: " + str(ww3))
+    print(" Difference in Training error is: " + str(error3-serr3) + ", and difference in test error is: " + str(terr3 - sterr3))
 
 
 def DualDomain(train, test, T):

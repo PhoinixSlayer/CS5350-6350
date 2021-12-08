@@ -1,5 +1,18 @@
 ### Code for solving the Neural Networks problems in Homework 5 ###
 
+import random as r
+import math as m
+import pandas as pd
+# libraries for ease of convenience, used to create graphs with the collected data
+import matplotlib as mat
+import matplotlib.pyplot as pyp
+
+##
+class Example:
+    def __init__(self, ex_number, attributes, labl):
+        self.example_number = ex_number
+        self.attributes = attributes
+        self.label = labl
 
 ###
 def main():

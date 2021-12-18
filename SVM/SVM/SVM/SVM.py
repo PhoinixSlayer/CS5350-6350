@@ -75,29 +75,35 @@ def SVM_Stochastic(train, test, T):
         for index in shuffled_order:
             example = train[index]
             pred1 = VectorMult(w1, example)
-            pred2 = VectorMult(w2, example)
-            pred3 = VectorMult(w3, example)
             if pred1 <= 1:
                 w1 = Update(w1, curr_gamma, C[0], N, example)
             else:
                 for j in range(len(w1)):
                     w1[j] = (1-curr_gamma) * w1[j]
 
+        shuffled_order = r.sample( range(1, len(train)+1), len(train))
+        for index in shuffled_order:
+            example = train[index]
+            pred2 = VectorMult(w2, example)
             if pred2 <= 1:
                 w2 = Update(w2, curr_gamma, C[1], N, example)
             else:
                 for j in range(len(w2)):
                     w2[j] = (1-curr_gamma) * w2[j]
 
+        shuffled_order = r.sample( range(1, len(train)+1), len(train))
+        for index in shuffled_order:
+            example = train[index]
+            pred3 = VectorMult(w3, example)
             if pred3 <= 1:
                 w3 = Update(w3, curr_gamma, C[2], N, example)
             else:
                 for j in range(len(w3)):
                     w3[j] = (1-curr_gamma) * w3[j]
 
-            t += 1 # Do this here? or after?
-            curr_gamma = Schedule1(gamma, a, t)
-            a = a * 0.99
+        t += 1 # Do this here? or after?
+        curr_gamma = Schedule1(gamma, a, t)
+        a = a * 0.99
 
             #they want me to tune the original gamma and a, does this mean I decrease those separately along with the one we're using for
             # this iteration? Or do we set this to the original gamma, then update it for each example, then when we reset for the next
@@ -114,29 +120,35 @@ def SVM_Stochastic(train, test, T):
         for index in shuffled_order:
             example = train[index]
             pred1 = VectorMult(ww1, example)
-            pred2 = VectorMult(ww2, example)
-            pred3 = VectorMult(ww3, example)
             if pred1 <= 1:
                 ww1 = Update(ww1, curr_gamma, C[0], N, example)
             else:
                 for j in range(len(ww1)):
                     ww1[j] = (1-curr_gamma) * ww1[j]
 
+        shuffled_order = r.sample( range(1, len(train)+1), len(train))
+        for index in shuffled_order:
+            example = train[index]
+            pred2 = VectorMult(ww2, example)
             if pred2 <= 1:
                 ww2 = Update(ww2, curr_gamma, C[1], N, example)
             else:
                 for j in range(len(ww2)):
                     ww2[j] = (1-curr_gamma) * ww2[j]
 
+        shuffled_order = r.sample( range(1, len(train)+1), len(train))
+        for index in shuffled_order:
+            example = train[index]
+            pred3 = VectorMult(ww3, example)
             if pred3 <= 1:
                 ww3 = Update(ww3, curr_gamma, C[2], N, example)
             else:
                 for j in range(len(ww3)):
                     ww3[j] = (1-curr_gamma) * ww3[j]
 
-            t += 1 # Do this here? or after?
-            curr_gamma = Schedule2(gamma, t)
-            a = a * 0.5
+        t += 1 # Do this here? or after?
+        curr_gamma = Schedule2(gamma, t)
+        a = a * 0.5
 
 
     # With the weight vectors complete, we can now run tests with them
